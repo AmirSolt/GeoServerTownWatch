@@ -10,13 +10,7 @@ import (
 
 func LoadRoutes(b *base.Base) {
 
-	if !b.IS_PROD {
-		loadTestRoutes(b)
-	}
-}
-
-func loadTestRoutes(b *base.Base) {
-	b.Engine.POST("/join/signin", func(ctx *gin.Context) {
+	b.Engine.POST("/api/events/fetch", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
 
 		err := FetchAndStoreTorontoEvents(b, ctx, time.Now().Add(-time.Duration(10)*time.Hour), time.Now())
 		if err != nil {
@@ -25,6 +19,5 @@ func loadTestRoutes(b *base.Base) {
 		}
 
 		ctx.Status(http.StatusOK)
-		return
 	})
 }
