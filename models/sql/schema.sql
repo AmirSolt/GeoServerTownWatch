@@ -104,7 +104,7 @@ CREATE TABLE reports (
     CONSTRAINT fk_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE OR REPLACE FUNCTION scan_areas(from_date TIMESTAMPTZ, to_date TIMESTAMPTZ, scan_events_limit INT)
-RETURNS SETOF reports AS $$
+RETURNS void AS $$
 DECLARE
     area_record RECORD;
     event_ids INT[];
@@ -127,8 +127,6 @@ BEGIN
             FOREACH event_id IN ARRAY event_ids LOOP
                 INSERT INTO scans (report_id, event_id) VALUES (new_report.id, event_id);
             END LOOP;
-            
-            RETURN NEXT new_report;
         END IF;
     END LOOP;
 END;
