@@ -9,8 +9,7 @@ import (
 
 type CError struct {
 	*sentry.EventID
-	UserMsg string
-	DevMsg  string
+	Message string
 	Error   error
 }
 
