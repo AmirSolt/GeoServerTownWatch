@@ -6,16 +6,13 @@ import (
 )
 
 func main() {
-	base := base.Base{
-		RootDir: "./",
-	}
 
-	base.LoadBase()
-	defer base.Kill()
+	b := base.LoadBase()
+	defer b.Kill()
 
 	fmt.Println("=======")
-	fmt.Println(base.DOMAIN)
+	fmt.Println(b.DOMAIN)
 	fmt.Println("=======")
 
-	base.Run()
+	b.Run()
 }

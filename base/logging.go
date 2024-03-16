@@ -10,10 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ErrorComm struct {
+type CError struct {
 	*sentry.EventID
-	UserMsg error
-	DevMsg  error
+	UserMsg string
+	DevMsg  string
+	Error   error
 }
 
 func (base *Base) loadLogging() {

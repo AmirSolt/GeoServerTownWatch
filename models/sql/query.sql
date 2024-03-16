@@ -4,7 +4,7 @@
 -- name: CreateEvents :copyfrom
 INSERT INTO events (
     occur_at,
-    external_src_id,
+    external_id,
     neighborhood,
     location_type,
     crime_type,

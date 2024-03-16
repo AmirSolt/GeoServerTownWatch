@@ -5,13 +5,14 @@ package base
 import (
 	"context"
 	"log"
+	"townwatch/models"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type DB struct {
-	// Queries *models.Queries
-	Pool *pgxpool.Pool
+	Queries *models.Queries
+	Pool    *pgxpool.Pool
 }
 
 func (base *Base) loadDB() {
@@ -20,8 +21,12 @@ func (base *Base) loadDB() {
 		log.Fatalln("Error db:", dbErr)
 	}
 
+	// queries := models.New(db)
+	queries := models.New(pool)
+
 	base.DB = &DB{
-		Pool: pool,
+		Queries: queries,
+		Pool:    pool,
 	}
 }
 

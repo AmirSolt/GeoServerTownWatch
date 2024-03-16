@@ -9,12 +9,18 @@ type Base struct {
 	*gin.Engine
 }
 
-func (base *Base) LoadBase() {
+func LoadBase() *Base {
+
+	base := Base{
+		RootDir: "./",
+	}
 
 	base.loadEnv()
 	base.loadDB()
 	base.loadEngine()
 	base.loadLogging()
+
+	return &base
 }
 
 func (base *Base) Kill() {

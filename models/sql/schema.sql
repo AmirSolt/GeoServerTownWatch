@@ -74,7 +74,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE areas (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    user TEXT UNIQUE NOT NULL,
+    user_id TEXT NOT NULL UNIQUE,
     is_active BOOLEAN NOT NULL DEFAULT true,
     address TEXT NOT NULL,
     region region NOT NULL,
@@ -83,7 +83,7 @@ CREATE TABLE areas (
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
 );
-CREATE INDEX area_user_idx ON areas ("user");
+CREATE INDEX area_user_idx ON areas ("user_id");
 CREATE FUNCTION area_insert() RETURNS trigger AS $$
     BEGIN
         NEW.point := ST_POINT(NEW.lat, NEW.long, 3857)

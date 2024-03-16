@@ -1,4 +1,4 @@
-package models
+package events
 
 type Region string
 

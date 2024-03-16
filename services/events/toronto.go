@@ -1,16 +1,17 @@
 package events
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+	"townwatch/base"
 	"townwatch/models"
 
+	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -49,55 +50,85 @@ type ArcgisAttributes struct {
 	LocationCategory string  `json:"LOCATION_CATEGORY"`
 }
 
-func FetchArcgisReports(fromDate time.Time, toDate time.Time) (*ArcgisResponse, error) {
+func FetchAndStoreTorontoEvents(b *base.Base, ctx *gin.Context, fromDate time.Time, toDate time.Time) *base.CError {
+	response, cerr := fetchArcgisToronto(b, fromDate, toDate)
+	if cerr != nil {
+		return cerr
+	}
+	eventParams := convertArcgisTorontoResponseToEventParams(response)
+	_, err := b.DB.Queries.CreateEvents(ctx, *eventParams)
+	if err != nil {
+		eventID := sentry.CaptureException(err)
+		return &base.CError{
+			EventID: eventID,
+			Error:   err,
+		}
+	}
+	return nil
+}
+
+func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*ArcgisResponse, *base.CError) {
 	toDateStr := fmt.Sprintf("AND OCC_DATE_AGOL <= date '%s'", convertToArcgisQueryTime(toDate))
 	where := fmt.Sprintf("OCC_DATE_AGOL >= date '%s' %s", convertToArcgisQueryTime(fromDate), toDateStr)
-	endpoint := fmt.Sprintf("%s?where=%s&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=none&distance=0.0&units=esriSRUnit_Meter&relationParam=&returnGeodetic=false&outFields=*&returnGeometry=true&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&defaultSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=none&f=pjson&token=", server.Env.ARCGIS_TORONTO_URL, url.QueryEscape(where))
+	endpoint := fmt.Sprintf("%s?where=%s&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=none&distance=0.0&units=esriSRUnit_Meter&relationParam=&returnGeodetic=false&outFields=*&returnGeometry=true&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&defaultSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=none&f=pjson&token=", b.Env.ARCGIS_TORONTO_URL, url.QueryEscape(where))
 	resp, err := http.Get(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("error making request to Arcgis API: %w", err)
+		eventID := sentry.CaptureException(err)
+		return nil, &base.CError{
+			EventID: eventID,
+			Error:   err,
+		}
 	}
 	defer resp.Body.Close()
 
 	var response ArcgisResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("error decoding ArcgisResponse: %w", err)
+		eventID := sentry.CaptureException(err)
+		return nil, &base.CError{
+			EventID: eventID,
+			Error:   err,
+		}
 	}
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 	vErr := validate.Struct(response)
 	if vErr != nil {
-		return nil, fmt.Errorf("error Arcgis response did not pass validator.: %w", err)
+		eventID := sentry.CaptureException(err)
+		return nil, &base.CError{
+			EventID: eventID,
+			Error:   err,
+		}
 	}
 	return &response, nil
 }
 
-func ConvertArcgisResponseToReportsParams(arcgisResponse *ArcgisResponse) *[]models.CreateReportsParams {
-	reportsParams := []models.CreateReportsParams{}
+func convertArcgisTorontoResponseToEventParams(arcgisResponse *ArcgisResponse) *[]models.CreateEventsParams {
+	reportsParams := []models.CreateEventsParams{}
 
 	for _, arcReport := range arcgisResponse.Features {
 		secs := int64(arcReport.Attributes.OccDateAgol/1000.0) + int64(arcReport.Attributes.Hour*60*60)
-		reportsParams = append(reportsParams, models.CreateReportsParams{
-			OccurAt:       pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
-			ExternalSrcID: arcReport.Attributes.EventUniqueId,
-			Neighborhood:  pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Neighbourhood158), Valid: true},
-			LocationType:  pgtype.Text{String: arcReport.Attributes.LocationCategory, Valid: true},
-			CrimeType:     models.CrimeType(arcReport.Attributes.CrimeType),
-			Region:        models.Region(models.RegionTORONTO),
-			Lat:           arcReport.Geometry.X,
-			Long:          arcReport.Geometry.Y,
+		reportsParams = append(reportsParams, models.CreateEventsParams{
+			OccurAt:      pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
+			ExternalID:   arcReport.Attributes.EventUniqueId,
+			Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Neighbourhood158), Valid: true},
+			LocationType: pgtype.Text{String: arcReport.Attributes.LocationCategory, Valid: true},
+			CrimeType:    models.CrimeType(arcReport.Attributes.CrimeType),
+			Region:       string(TorontoRegion),
+			Lat:          arcReport.Geometry.X,
+			Long:         arcReport.Geometry.Y,
 		})
 	}
 
 	return &reportsParams
 }
 
-func (server *Server) CreateReports(reportsParams *[]models.CreateReportsParams) {
-	count, err := server.DB.Queries.CreateReports(context.Background(), *reportsParams)
-	if err != nil {
-		log.Fatalln("ERROR: bulk insert reports failed:", err, " || count:", count)
-	}
-}
+// func CreateReports(base *base.Base, reportsParams *[]models.CreateEventsParams) {
+
+// 	count, err := base.DB.Queries.CreateEvents(context.Background(), *reportsParams)
+// 	if err != nil {
+// 		log.Fatalln("ERROR: bulk insert reports failed:", err, " || count:", count)
+// 	}
+// }
 
 func convertToArcgisQueryTime(time time.Time) string {
 	return fmt.Sprintf("%d-%d-%d %d:%d:%d\n",
