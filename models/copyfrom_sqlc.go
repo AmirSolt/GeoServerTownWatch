@@ -44,6 +44,8 @@ func (r iteratorForCreateEvents) Err() error {
 	return nil
 }
 
+// =========================================
+// events
 func (q *Queries) CreateEvents(ctx context.Context, arg []CreateEventsParams) (int64, error) {
 	return q.db.CopyFrom(ctx, []string{"events"}, []string{"occur_at", "external_id", "neighborhood", "location_type", "crime_type", "region", "lat", "long"}, &iteratorForCreateEvents{rows: arg})
 }

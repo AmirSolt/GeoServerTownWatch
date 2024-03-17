@@ -91,6 +91,7 @@ type Event struct {
 type Report struct {
 	ID         pgtype.UUID
 	CreatedAt  pgtype.Timestamptz
+	UserID     string
 	IsReported bool
 	AreaID     int32
 }

@@ -42,7 +42,7 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER on_event_insert BEFORE INSERT OR UPDATE ON events
     FOR EACH ROW EXECUTE FUNCTION event_insert();
 
-CREATE FUNCTION scan_custom_area(
+CREATE FUNCTION scan_point(
     lat DOUBLE PRECISION,
     long DOUBLE PRECISION,
     radius DOUBLE PRECISION,
@@ -99,12 +99,13 @@ CREATE TRIGGER on_area_insert BEFORE INSERT OR UPDATE ON areas
 CREATE TABLE reports (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    user_id TEXT NOT NULL UNIQUE,
     is_reported BOOLEAN NOT NULL DEFAULT false,
     area_id INT NOT NULL REFERENCES areas(id),
     CONSTRAINT fk_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE OR REPLACE FUNCTION scan_areas(from_date TIMESTAMPTZ, to_date TIMESTAMPTZ, scan_events_limit INT)
-RETURNS void AS $$
+CREATE OR REPLACE FUNCTION create_global_reports(from_date TIMESTAMPTZ, to_date TIMESTAMPTZ, scan_events_limit INT)
+RETURNS SETOF reports AS $$
 DECLARE
     area_record RECORD;
     event_ids INT[];
@@ -121,12 +122,14 @@ BEGIN
         );
         
         IF array_length(event_ids, 1) > 0 THEN
-            INSERT INTO reports area_id VALUES area_record.id
+            INSERT INTO reports (area_id, user_id) VALUES (area_record.id, area_record.user_id)
             RETURNING * INTO new_report;
             
             FOREACH event_id IN ARRAY event_ids LOOP
                 INSERT INTO scans (report_id, event_id) VALUES (new_report.id, event_id);
             END LOOP;
+
+            RETURN NEXT new_report;
         END IF;
     END LOOP;
 END;

@@ -1,5 +1,7 @@
 
 
+-- =========================================
+-- events
 
 -- name: CreateEvents :copyfrom
 INSERT INTO events (
@@ -13,11 +15,47 @@ INSERT INTO events (
     long
 ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
 
+-- =========================================
+--  areas
 
--- name: ScanCustomArea :many
-SELECT scan_custom_area($1, $2, $3, $4, $5, $6, $7);
 
--- name: ScanAreas :many
-SELECT scan_areas($1, $2, $3);
+-- name: GetArea :one
+SELECT * FROM areas
+WHERE id = $1 AND user_id=$2;
+
+-- name: CreateArea :exec
+INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3,$4,$5,$6);
+
+-- name: UpdateArea :exec
+UPDATE areas SET 
+address = $3,
+radius = $4,
+lat = $5,
+long = $6
+WHERE id = $1 AND user_id = $2;
+
+-- name: DeleteArea :exec
+DELETE FROM areas WHERE id = $1 AND user_id=$2;
+
+-- =========================================
+-- reports
+
+-- name: GetReport :one
+SELECT * FROM reports
+WHERE id = $1 AND user_id=$2;
+
+-- name: GetPublicReport :one
+SELECT id FROM reports
+WHERE id = $1;
+
+
+-- =========================================
+-- custom functions
+
+-- name: ScanPoint :many
+SELECT scan_point($1, $2, $3, $4, $5, $6, $7);
+
+-- name: CreateGlobalReports :exec
+SELECT create_global_reports($1, $2, $3);
 
 

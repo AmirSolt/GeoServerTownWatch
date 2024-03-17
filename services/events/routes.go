@@ -10,7 +10,7 @@ import (
 
 func LoadRoutes(b *base.Base) {
 
-	b.Engine.POST("/api/events/fetch", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
+	b.Engine.GET("/api/events/fetch", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
 
 		err := FetchAndStoreTorontoEvents(b, ctx, time.Now().Add(-time.Duration(10)*time.Hour), time.Now())
 		if err != nil {

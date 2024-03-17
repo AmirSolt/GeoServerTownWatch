@@ -11,6 +11,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createArea = `-- name: CreateArea :exec
+INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3,$4,$5,$6)
+`
+
+type CreateAreaParams struct {
+	UserID  string
+	Address string
+	Region  interface{}
+	Radius  float64
+	Lat     float64
+	Long    float64
+}
+
+func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) error {
+	_, err := q.db.Exec(ctx, createArea,
+		arg.UserID,
+		arg.Address,
+		arg.Region,
+		arg.Radius,
+		arg.Lat,
+		arg.Long,
+	)
+	return err
+}
+
 type CreateEventsParams struct {
 	OccurAt      pgtype.Timestamptz
 	ExternalID   string
@@ -22,41 +47,100 @@ type CreateEventsParams struct {
 	Long         float64
 }
 
-const scanAreas = `-- name: ScanAreas :many
-SELECT scan_areas($1, $2, $3)
+const createGlobalReports = `-- name: CreateGlobalReports :exec
+SELECT create_global_reports($1, $2, $3)
 `
 
-type ScanAreasParams struct {
+type CreateGlobalReportsParams struct {
 	FromDate        pgtype.Timestamptz
 	ToDate          pgtype.Timestamptz
 	ScanEventsLimit int32
 }
 
-func (q *Queries) ScanAreas(ctx context.Context, arg ScanAreasParams) ([]interface{}, error) {
-	rows, err := q.db.Query(ctx, scanAreas, arg.FromDate, arg.ToDate, arg.ScanEventsLimit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []interface{}
-	for rows.Next() {
-		var scan_areas interface{}
-		if err := rows.Scan(&scan_areas); err != nil {
-			return nil, err
-		}
-		items = append(items, scan_areas)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalReportsParams) error {
+	_, err := q.db.Exec(ctx, createGlobalReports, arg.FromDate, arg.ToDate, arg.ScanEventsLimit)
+	return err
 }
 
-const scanCustomArea = `-- name: ScanCustomArea :many
-SELECT scan_custom_area($1, $2, $3, $4, $5, $6, $7)
+const deleteArea = `-- name: DeleteArea :exec
+DELETE FROM areas WHERE id = $1 AND user_id=$2
 `
 
-type ScanCustomAreaParams struct {
+type DeleteAreaParams struct {
+	ID     int32
+	UserID string
+}
+
+func (q *Queries) DeleteArea(ctx context.Context, arg DeleteAreaParams) error {
+	_, err := q.db.Exec(ctx, deleteArea, arg.ID, arg.UserID)
+	return err
+}
+
+const getArea = `-- name: GetArea :one
+
+
+SELECT id, created_at, user_id, is_active, address, region, radius, point, lat, long FROM areas
+WHERE id = $1 AND user_id=$2
+`
+
+type GetAreaParams struct {
+	ID     int32
+	UserID string
+}
+
+// =========================================
+//
+//	areas
+func (q *Queries) GetArea(ctx context.Context, arg GetAreaParams) (Area, error) {
+	row := q.db.QueryRow(ctx, getArea, arg.ID, arg.UserID)
+	var i Area
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.IsActive,
+		&i.Address,
+		&i.Region,
+		&i.Radius,
+		&i.Point,
+		&i.Lat,
+		&i.Long,
+	)
+	return i, err
+}
+
+const getReport = `-- name: GetReport :one
+
+SELECT id, created_at, user_id, is_reported, area_id FROM reports
+WHERE id = $1 AND user_id=$2
+`
+
+type GetReportParams struct {
+	ID     pgtype.UUID
+	UserID string
+}
+
+// =========================================
+// reports
+func (q *Queries) GetReport(ctx context.Context, arg GetReportParams) (Report, error) {
+	row := q.db.QueryRow(ctx, getReport, arg.ID, arg.UserID)
+	var i Report
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.IsReported,
+		&i.AreaID,
+	)
+	return i, err
+}
+
+const scanPoint = `-- name: ScanPoint :many
+
+SELECT scan_point($1, $2, $3, $4, $5, $6, $7)
+`
+
+type ScanPointParams struct {
 	Lat        float64
 	Long       float64
 	Radius     float64
@@ -66,8 +150,10 @@ type ScanCustomAreaParams struct {
 	CountLimit int32
 }
 
-func (q *Queries) ScanCustomArea(ctx context.Context, arg ScanCustomAreaParams) ([]interface{}, error) {
-	rows, err := q.db.Query(ctx, scanCustomArea,
+// =========================================
+// custom functions
+func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]interface{}, error) {
+	rows, err := q.db.Query(ctx, scanPoint,
 		arg.Lat,
 		arg.Long,
 		arg.Radius,
@@ -82,14 +168,44 @@ func (q *Queries) ScanCustomArea(ctx context.Context, arg ScanCustomAreaParams) 
 	defer rows.Close()
 	var items []interface{}
 	for rows.Next() {
-		var scan_custom_area interface{}
-		if err := rows.Scan(&scan_custom_area); err != nil {
+		var scan_point interface{}
+		if err := rows.Scan(&scan_point); err != nil {
 			return nil, err
 		}
-		items = append(items, scan_custom_area)
+		items = append(items, scan_point)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateArea = `-- name: UpdateArea :exec
+UPDATE areas SET 
+address = $3,
+radius = $4,
+lat = $5,
+long = $6
+WHERE id = $1 AND user_id = $2
+`
+
+type UpdateAreaParams struct {
+	ID      int32
+	UserID  string
+	Address string
+	Radius  float64
+	Lat     float64
+	Long    float64
+}
+
+func (q *Queries) UpdateArea(ctx context.Context, arg UpdateAreaParams) error {
+	_, err := q.db.Exec(ctx, updateArea,
+		arg.ID,
+		arg.UserID,
+		arg.Address,
+		arg.Radius,
+		arg.Lat,
+		arg.Long,
+	)
+	return err
 }
