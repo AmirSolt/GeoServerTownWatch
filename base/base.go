@@ -5,6 +5,7 @@ import "github.com/gin-gonic/gin"
 type Base struct {
 	RootDir string
 	*Env
+	*Config
 	*DB
 	*gin.Engine
 }
@@ -16,6 +17,7 @@ func LoadBase() *Base {
 	}
 
 	base.loadEnv()
+	base.loadConfig()
 	base.loadDB()
 	base.loadEngine()
 	base.loadLogging()

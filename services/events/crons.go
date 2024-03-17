@@ -2,23 +2,17 @@ package events
 
 import (
 	"context"
-	"net/http"
+	"time"
 	"townwatch/base"
 
-	"github.com/carlmjohnson/requests"
-	"github.com/getsentry/sentry-go"
 	"github.com/robfig/cron"
 )
 
 func LoadCronJobs(b *base.Base, c *cron.Cron) {
 	c.AddFunc("0 30 * * * *", func() {
-		err := requests.
-			URL("/api/events/fetch").
-			Method(http.MethodGet).
-			Header(base.HeaderSecretKeyName, b.SECRET_API_KEY).
-			Fetch(context.Background())
+		err := FetchAndStoreTorontoEvents(b, context.Background(), time.Now().Add(-time.Duration(10)*time.Hour).UTC(), time.Now().UTC())
 		if err != nil {
-			sentry.CaptureException(err)
+			return
 		}
 	})
 }

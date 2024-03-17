@@ -65,6 +65,6 @@ WHERE r.id = $1;
 -- name: ScanPoint :many
 SELECT scan_point($1, $2, $3, $4, $5, $6, $7);
 
--- name: CreateGlobalReports :exec
+-- name: CreateGlobalReports :many
 SELECT create_global_reports($1, $2, $3);
 

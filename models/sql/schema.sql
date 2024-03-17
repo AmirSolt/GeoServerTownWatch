@@ -49,7 +49,7 @@ CREATE FUNCTION scan_point(
     region TEXT,
     from_date TIMESTAMPTZ,
     to_date TIMESTAMPTZ,
-    count_limit INT
+    scan_events_count_limit INT
     ) RETURNS SETOF reports AS $$
         RETURN QUERY
         SELECT *
@@ -64,7 +64,7 @@ CREATE FUNCTION scan_point(
         AND occur_at >= from_date
         AND occur_at <= to_date
         ORDER BY occur_at
-        LIMIT count_limit;
+        LIMIT scan_events_count_limit;
 $$ LANGUAGE plpgsql;
 
 
@@ -104,7 +104,7 @@ CREATE TABLE reports (
     area_id INT NOT NULL REFERENCES areas(id),
     CONSTRAINT fk_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE OR REPLACE FUNCTION create_global_reports(from_date TIMESTAMPTZ, to_date TIMESTAMPTZ, scan_events_limit INT)
+CREATE OR REPLACE FUNCTION create_global_reports(from_date TIMESTAMPTZ, to_date TIMESTAMPTZ, scan_events_count_limit INT)
 RETURNS SETOF reports AS $$
 DECLARE
     area_record RECORD;

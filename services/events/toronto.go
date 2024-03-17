@@ -1,6 +1,7 @@
 package events
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"townwatch/models"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -50,7 +50,7 @@ type ArcgisAttributes struct {
 	LocationCategory string  `json:"LOCATION_CATEGORY"`
 }
 
-func FetchAndStoreTorontoEvents(b *base.Base, ctx *gin.Context, fromDate time.Time, toDate time.Time) *base.CError {
+func FetchAndStoreTorontoEvents(b *base.Base, ctx context.Context, fromDate time.Time, toDate time.Time) *base.CError {
 	response, cerr := fetchArcgisToronto(b, fromDate, toDate)
 	if cerr != nil {
 		return cerr

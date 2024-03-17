@@ -47,19 +47,34 @@ type CreateEventsParams struct {
 	Long         float64            `json:"long"`
 }
 
-const createGlobalReports = `-- name: CreateGlobalReports :exec
+const createGlobalReports = `-- name: CreateGlobalReports :many
 SELECT create_global_reports($1, $2, $3)
 `
 
 type CreateGlobalReportsParams struct {
-	FromDate        pgtype.Timestamptz `json:"from_date"`
-	ToDate          pgtype.Timestamptz `json:"to_date"`
-	ScanEventsLimit int32              `json:"scan_events_limit"`
+	FromDate             pgtype.Timestamptz `json:"from_date"`
+	ToDate               pgtype.Timestamptz `json:"to_date"`
+	ScanEventsCountLimit int32              `json:"scan_events_count_limit"`
 }
 
-func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalReportsParams) error {
-	_, err := q.db.Exec(ctx, createGlobalReports, arg.FromDate, arg.ToDate, arg.ScanEventsLimit)
-	return err
+func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalReportsParams) ([]interface{}, error) {
+	rows, err := q.db.Query(ctx, createGlobalReports, arg.FromDate, arg.ToDate, arg.ScanEventsCountLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []interface{}
+	for rows.Next() {
+		var create_global_reports interface{}
+		if err := rows.Scan(&create_global_reports); err != nil {
+			return nil, err
+		}
+		items = append(items, create_global_reports)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const deleteArea = `-- name: DeleteArea :exec
@@ -217,13 +232,13 @@ SELECT scan_point($1, $2, $3, $4, $5, $6, $7)
 `
 
 type ScanPointParams struct {
-	Lat        float64            `json:"lat"`
-	Long       float64            `json:"long"`
-	Radius     float64            `json:"radius"`
-	Region     string             `json:"region"`
-	FromDate   pgtype.Timestamptz `json:"from_date"`
-	ToDate     pgtype.Timestamptz `json:"to_date"`
-	CountLimit int32              `json:"count_limit"`
+	Lat                  float64            `json:"lat"`
+	Long                 float64            `json:"long"`
+	Radius               float64            `json:"radius"`
+	Region               string             `json:"region"`
+	FromDate             pgtype.Timestamptz `json:"from_date"`
+	ToDate               pgtype.Timestamptz `json:"to_date"`
+	ScanEventsCountLimit int32              `json:"scan_events_count_limit"`
 }
 
 // =========================================
@@ -236,7 +251,7 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]interfa
 		arg.Region,
 		arg.FromDate,
 		arg.ToDate,
-		arg.CountLimit,
+		arg.ScanEventsCountLimit,
 	)
 	if err != nil {
 		return nil, err

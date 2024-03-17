@@ -3,18 +3,20 @@ module townwatch
 go 1.21.6
 
 require (
+	github.com/carlmjohnson/requests v0.23.5
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-playground/validator/v10 v10.19.0
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/joho/godotenv v1.5.1
+	github.com/pocketbase/pocketbase v0.22.4
+	github.com/robfig/cron v1.2.0
 )
 
 require (
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/bytedance/sonic v1.11.3 // indirect
-	github.com/carlmjohnson/requests v0.23.5 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.1 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
@@ -42,14 +44,13 @@ require (
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/robfig/cron v1.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.7.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
