@@ -16,12 +16,12 @@ INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3
 `
 
 type CreateAreaParams struct {
-	UserID  string
-	Address string
-	Region  interface{}
-	Radius  float64
-	Lat     float64
-	Long    float64
+	UserID  string      `json:"user_id"`
+	Address string      `json:"address"`
+	Region  interface{} `json:"region"`
+	Radius  float64     `json:"radius"`
+	Lat     float64     `json:"lat"`
+	Long    float64     `json:"long"`
 }
 
 func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) error {
@@ -37,14 +37,14 @@ func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) error {
 }
 
 type CreateEventsParams struct {
-	OccurAt      pgtype.Timestamptz
-	ExternalID   string
-	Neighborhood pgtype.Text
-	LocationType pgtype.Text
-	CrimeType    CrimeType
-	Region       string
-	Lat          float64
-	Long         float64
+	OccurAt      pgtype.Timestamptz `json:"occur_at"`
+	ExternalID   string             `json:"external_id"`
+	Neighborhood pgtype.Text        `json:"neighborhood"`
+	LocationType pgtype.Text        `json:"location_type"`
+	CrimeType    CrimeType          `json:"crime_type"`
+	Region       string             `json:"region"`
+	Lat          float64            `json:"lat"`
+	Long         float64            `json:"long"`
 }
 
 const createGlobalReports = `-- name: CreateGlobalReports :exec
@@ -52,9 +52,9 @@ SELECT create_global_reports($1, $2, $3)
 `
 
 type CreateGlobalReportsParams struct {
-	FromDate        pgtype.Timestamptz
-	ToDate          pgtype.Timestamptz
-	ScanEventsLimit int32
+	FromDate        pgtype.Timestamptz `json:"from_date"`
+	ToDate          pgtype.Timestamptz `json:"to_date"`
+	ScanEventsLimit int32              `json:"scan_events_limit"`
 }
 
 func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalReportsParams) error {
@@ -67,8 +67,8 @@ DELETE FROM areas WHERE id = $1 AND user_id=$2
 `
 
 type DeleteAreaParams struct {
-	ID     int32
-	UserID string
+	ID     int32  `json:"id"`
+	UserID string `json:"user_id"`
 }
 
 func (q *Queries) DeleteArea(ctx context.Context, arg DeleteAreaParams) error {
@@ -84,8 +84,8 @@ WHERE id = $1 AND user_id=$2
 `
 
 type GetAreaParams struct {
-	ID     int32
-	UserID string
+	ID     int32  `json:"id"`
+	UserID string `json:"user_id"`
 }
 
 // =========================================
@@ -109,29 +109,105 @@ func (q *Queries) GetArea(ctx context.Context, arg GetAreaParams) (Area, error) 
 	return i, err
 }
 
-const getReport = `-- name: GetReport :one
-
-SELECT id, created_at, user_id, is_reported, area_id FROM reports
-WHERE id = $1 AND user_id=$2
+const getEventsByReport = `-- name: GetEventsByReport :many
+SELECT e.id, e.created_at, e.occur_at, e.external_id, e.neighborhood, e.location_type, e.crime_type, e.region, e.point, e.lat, e.long
+FROM events e
+INNER JOIN report_events re ON e.id = re.event_id
+INNER JOIN reports r ON re.report_id = r.id
+WHERE r.id = $1
 `
 
-type GetReportParams struct {
-	ID     pgtype.UUID
-	UserID string
+func (q *Queries) GetEventsByReport(ctx context.Context, id pgtype.UUID) ([]Event, error) {
+	rows, err := q.db.Query(ctx, getEventsByReport, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Event
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.OccurAt,
+			&i.ExternalID,
+			&i.Neighborhood,
+			&i.LocationType,
+			&i.CrimeType,
+			&i.Region,
+			&i.Point,
+			&i.Lat,
+			&i.Long,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPrivateReportDetails = `-- name: GetPrivateReportDetails :one
+SELECT r.id, r.created_at, r.user_id, r.is_reported, r.area_id, a.id, a.created_at, a.user_id, a.is_active, a.address, a.region, a.radius, a.point, a.lat, a.long
+FROM reports r
+INNER JOIN areas a ON r.area_id = a.id
+WHERE r.id = $1 AND r.user_id = $2
+`
+
+type GetPrivateReportDetailsParams struct {
+	ID     pgtype.UUID `json:"id"`
+	UserID string      `json:"user_id"`
+}
+
+type GetPrivateReportDetailsRow struct {
+	Report Report `json:"report"`
+	Area   Area   `json:"area"`
+}
+
+func (q *Queries) GetPrivateReportDetails(ctx context.Context, arg GetPrivateReportDetailsParams) (GetPrivateReportDetailsRow, error) {
+	row := q.db.QueryRow(ctx, getPrivateReportDetails, arg.ID, arg.UserID)
+	var i GetPrivateReportDetailsRow
+	err := row.Scan(
+		&i.Report.ID,
+		&i.Report.CreatedAt,
+		&i.Report.UserID,
+		&i.Report.IsReported,
+		&i.Report.AreaID,
+		&i.Area.ID,
+		&i.Area.CreatedAt,
+		&i.Area.UserID,
+		&i.Area.IsActive,
+		&i.Area.Address,
+		&i.Area.Region,
+		&i.Area.Radius,
+		&i.Area.Point,
+		&i.Area.Lat,
+		&i.Area.Long,
+	)
+	return i, err
+}
+
+const getPublicReportDetails = `-- name: GetPublicReportDetails :one
+
+
+SELECT id, created_at, is_reported  FROM reports
+WHERE id = $1
+`
+
+type GetPublicReportDetailsRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	IsReported bool               `json:"is_reported"`
 }
 
 // =========================================
 // reports
-func (q *Queries) GetReport(ctx context.Context, arg GetReportParams) (Report, error) {
-	row := q.db.QueryRow(ctx, getReport, arg.ID, arg.UserID)
-	var i Report
-	err := row.Scan(
-		&i.ID,
-		&i.CreatedAt,
-		&i.UserID,
-		&i.IsReported,
-		&i.AreaID,
-	)
+func (q *Queries) GetPublicReportDetails(ctx context.Context, id pgtype.UUID) (GetPublicReportDetailsRow, error) {
+	row := q.db.QueryRow(ctx, getPublicReportDetails, id)
+	var i GetPublicReportDetailsRow
+	err := row.Scan(&i.ID, &i.CreatedAt, &i.IsReported)
 	return i, err
 }
 
@@ -141,13 +217,13 @@ SELECT scan_point($1, $2, $3, $4, $5, $6, $7)
 `
 
 type ScanPointParams struct {
-	Lat        float64
-	Long       float64
-	Radius     float64
-	Region     string
-	FromDate   pgtype.Timestamptz
-	ToDate     pgtype.Timestamptz
-	CountLimit int32
+	Lat        float64            `json:"lat"`
+	Long       float64            `json:"long"`
+	Radius     float64            `json:"radius"`
+	Region     string             `json:"region"`
+	FromDate   pgtype.Timestamptz `json:"from_date"`
+	ToDate     pgtype.Timestamptz `json:"to_date"`
+	CountLimit int32              `json:"count_limit"`
 }
 
 // =========================================
@@ -190,12 +266,12 @@ WHERE id = $1 AND user_id = $2
 `
 
 type UpdateAreaParams struct {
-	ID      int32
-	UserID  string
-	Address string
-	Radius  float64
-	Lat     float64
-	Long    float64
+	ID      int32   `json:"id"`
+	UserID  string  `json:"user_id"`
+	Address string  `json:"address"`
+	Radius  float64 `json:"radius"`
+	Lat     float64 `json:"lat"`
+	Long    float64 `json:"long"`
 }
 
 func (q *Queries) UpdateArea(ctx context.Context, arg UpdateAreaParams) error {

@@ -39,8 +39,8 @@ func (e *CrimeType) Scan(src interface{}) error {
 }
 
 type NullCrimeType struct {
-	CrimeType CrimeType
-	Valid     bool // Valid is true if CrimeType is not NULL
+	CrimeType CrimeType `json:"crime_type"`
+	Valid     bool      `json:"valid"` // Valid is true if CrimeType is not NULL
 }
 
 // Scan implements the Scanner interface.
@@ -62,42 +62,42 @@ func (ns NullCrimeType) Value() (driver.Value, error) {
 }
 
 type Area struct {
-	ID        int32
-	CreatedAt pgtype.Timestamptz
-	UserID    string
-	IsActive  bool
-	Address   string
-	Region    interface{}
-	Radius    float64
-	Point     interface{}
-	Lat       float64
-	Long      float64
+	ID        int32              `json:"id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UserID    string             `json:"user_id"`
+	IsActive  bool               `json:"is_active"`
+	Address   string             `json:"address"`
+	Region    interface{}        `json:"region"`
+	Radius    float64            `json:"radius"`
+	Point     interface{}        `json:"point"`
+	Lat       float64            `json:"lat"`
+	Long      float64            `json:"long"`
 }
 
 type Event struct {
-	ID           int32
-	CreatedAt    pgtype.Timestamptz
-	OccurAt      pgtype.Timestamptz
-	ExternalID   string
-	Neighborhood pgtype.Text
-	LocationType pgtype.Text
-	CrimeType    CrimeType
-	Region       string
-	Point        interface{}
-	Lat          float64
-	Long         float64
+	ID           int32              `json:"id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	OccurAt      pgtype.Timestamptz `json:"occur_at"`
+	ExternalID   string             `json:"external_id"`
+	Neighborhood pgtype.Text        `json:"neighborhood"`
+	LocationType pgtype.Text        `json:"location_type"`
+	CrimeType    CrimeType          `json:"crime_type"`
+	Region       string             `json:"region"`
+	Point        interface{}        `json:"point"`
+	Lat          float64            `json:"lat"`
+	Long         float64            `json:"long"`
 }
 
 type Report struct {
-	ID         pgtype.UUID
-	CreatedAt  pgtype.Timestamptz
-	UserID     string
-	IsReported bool
-	AreaID     int32
+	ID         pgtype.UUID        `json:"id"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UserID     string             `json:"user_id"`
+	IsReported bool               `json:"is_reported"`
+	AreaID     int32              `json:"area_id"`
 }
 
-type Scan struct {
-	CreatedAt pgtype.Timestamptz
-	ReportID  pgtype.UUID
-	EventID   int32
+type ReportEvent struct {
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ReportID  pgtype.UUID        `json:"report_id"`
+	EventID   int32              `json:"event_id"`
 }

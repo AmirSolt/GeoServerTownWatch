@@ -126,7 +126,7 @@ BEGIN
             RETURNING * INTO new_report;
             
             FOREACH event_id IN ARRAY event_ids LOOP
-                INSERT INTO scans (report_id, event_id) VALUES (new_report.id, event_id);
+                INSERT INTO report_events (report_id, event_id) VALUES (new_report.id, event_id);
             END LOOP;
 
             RETURN NEXT new_report;
@@ -137,7 +137,7 @@ $$ LANGUAGE plpgsql;
 
 -- ======
 
-CREATE TABLE scans (
+CREATE TABLE report_events (
     PRIMARY KEY (report_id, event_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     report_id uuid NOT NULL REFERENCES reports(id),
@@ -145,4 +145,5 @@ CREATE TABLE scans (
     CONSTRAINT fk_report FOREIGN KEY(report_id) REFERENCES reports(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_event FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE UNIQUE INDEX report_idx ON scans("report_id");
+CREATE UNIQUE INDEX report_idx ON report_events("report_id");
+

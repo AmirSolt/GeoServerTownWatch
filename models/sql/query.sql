@@ -40,13 +40,23 @@ DELETE FROM areas WHERE id = $1 AND user_id=$2;
 -- =========================================
 -- reports
 
--- name: GetReport :one
-SELECT * FROM reports
-WHERE id = $1 AND user_id=$2;
 
--- name: GetPublicReport :one
-SELECT id FROM reports
+-- name: GetPublicReportDetails :one
+SELECT id, created_at, is_reported  FROM reports
 WHERE id = $1;
+
+-- name: GetPrivateReportDetails :one
+SELECT sqlc.embed(r), sqlc.embed(a)
+FROM reports r
+INNER JOIN areas a ON r.area_id = a.id
+WHERE r.id = $1 AND r.user_id = $2;
+
+-- name: GetEventsByReport :many
+SELECT e.*
+FROM events e
+INNER JOIN report_events re ON e.id = re.event_id
+INNER JOIN reports r ON re.report_id = r.id
+WHERE r.id = $1;
 
 
 -- =========================================
@@ -57,5 +67,4 @@ SELECT scan_point($1, $2, $3, $4, $5, $6, $7);
 
 -- name: CreateGlobalReports :exec
 SELECT create_global_reports($1, $2, $3);
-
 
