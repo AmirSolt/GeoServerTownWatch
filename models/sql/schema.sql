@@ -42,7 +42,23 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER on_event_insert BEFORE INSERT OR UPDATE ON events
     FOR EACH ROW EXECUTE FUNCTION event_insert();
 
-CREATE FUNCTION scan_point(
+CREATE TABLE scans (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    radius DOUBLE PRECISION NOT NULL,
+    from_date TIMESTAMPTZ NOT NULL,
+    to_date TIMESTAMPTZ NOT NULL,
+
+    events_count INT NOT NULL,
+
+    region TEXT NOT NULL,
+    point geometry(Point, 3857) NOT NULL,
+    lat DOUBLE PRECISION NOT NULL,
+    long DOUBLE PRECISION NOT NULL
+);
+
+CREATE OR REPLACE FUNCTION scan_point(
   lat DOUBLE PRECISION,
   long DOUBLE PRECISION,
   radius DOUBLE PRECISION,
@@ -50,26 +66,69 @@ CREATE FUNCTION scan_point(
   from_date TIMESTAMPTZ,
   to_date TIMESTAMPTZ,
   scan_events_count_limit INT
-) RETURNS SETOF record AS $$
+) RETURNS SETOF events AS $$
+DECLARE
+    scan_results CURSOR FOR
+        SELECT *
+        FROM events
+        WHERE  
+            ST_DWithin(
+                point,
+                ST_Point(lat, long, 3857),
+                radius
+            )
+            AND region = region
+            AND occur_at >= from_date
+            AND occur_at <= to_date
+        ORDER BY occur_at
+        LIMIT scan_events_count_limit;
+
+    event_row events%ROWTYPE;
+    scan_record scans%ROWTYPE;
+    events_found_count INT := 0;
 BEGIN
-  RETURN QUERY
-    SELECT *
-    FROM events
-    WHERE  
-      ST_DWithin(
-        point,
-        ST_Point(lat, long, 3857),
-        radius
-      )
-      AND region = region
-      AND occur_at >= from_date
-      AND occur_at <= to_date
-    ORDER BY occur_at
-    LIMIT scan_events_count_limit;
+    -- Perform the scan and store the results in a temporary table
+    CREATE TEMP TABLE temp_scan_results AS
+        SELECT *
+        FROM events
+        WHERE  
+            ST_DWithin(
+                point,
+                ST_Point(lat, long, 3857),
+                radius
+            )
+            AND region = region
+            AND occur_at >= from_date
+            AND occur_at <= to_date
+        ORDER BY occur_at
+        LIMIT scan_events_count_limit;
+
+    -- Iterate over the results to count the events
+    FOR event_row IN scan_results LOOP
+        events_found_count := events_found_count + 1;
+    END LOOP;
+
+    -- Record the completed scan
+    scan_record.radius := radius;
+    scan_record.from_date := from_date;
+    scan_record.to_date := to_date;
+    scan_record.events_found_count := events_found_count;
+    scan_record.region := region;
+    scan_record.point := ST_SetSRID(ST_MakePoint(long, lat), 3857);
+    scan_record.lat := lat;
+    scan_record.long := long;
+
+    INSERT INTO scans (radius, from_date, to_date, events_found_count, region, point, lat, long)
+    VALUES (scan_record.radius, scan_record.from_date, scan_record.to_date, scan_record.events_found_count, scan_record.region, scan_record.point, scan_record.lat, scan_record.long);
+
+    -- Return the original scan results
+    RETURN QUERY SELECT * FROM temp_scan_results;
+
+    DROP TABLE IF EXISTS temp_scan_results;
+
+    RETURN;
 END;
 $$ LANGUAGE plpgsql;
-
-
 -- ======
 
 CREATE TABLE areas (
@@ -148,3 +207,6 @@ CREATE TABLE report_events (
     CONSTRAINT fk_event FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE UNIQUE INDEX report_idx ON report_events("report_id");
+
+-- ======
+
