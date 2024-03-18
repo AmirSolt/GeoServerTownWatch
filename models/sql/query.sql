@@ -23,6 +23,11 @@ INSERT INTO events (
 SELECT * FROM areas
 WHERE id = $1 AND user_id=$2;
 
+-- name: GetAreasByUser :many
+SELECT * FROM areas
+WHERE user_id = $1;
+
+
 -- name: CreateArea :exec
 INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3,$4,$5,$6);
 

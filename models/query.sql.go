@@ -124,6 +124,42 @@ func (q *Queries) GetArea(ctx context.Context, arg GetAreaParams) (Area, error) 
 	return i, err
 }
 
+const getAreasByUser = `-- name: GetAreasByUser :many
+SELECT id, created_at, user_id, is_active, address, region, radius, point, lat, long FROM areas
+WHERE user_id = $1
+`
+
+func (q *Queries) GetAreasByUser(ctx context.Context, userID string) ([]Area, error) {
+	rows, err := q.db.Query(ctx, getAreasByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Area
+	for rows.Next() {
+		var i Area
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UserID,
+			&i.IsActive,
+			&i.Address,
+			&i.Region,
+			&i.Radius,
+			&i.Point,
+			&i.Lat,
+			&i.Long,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getEventsByReport = `-- name: GetEventsByReport :many
 SELECT e.id, e.created_at, e.occur_at, e.external_id, e.neighborhood, e.location_type, e.crime_type, e.region, e.point, e.lat, e.long
 FROM events e

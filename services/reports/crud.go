@@ -27,6 +27,7 @@ func ReadPrivateReport(b *base.Base, ctx *gin.Context, params *models.GetPrivate
 		eventID := sentry.CaptureException(err)
 		return nil, &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
@@ -35,6 +36,7 @@ func ReadPrivateReport(b *base.Base, ctx *gin.Context, params *models.GetPrivate
 		eventID := sentry.CaptureException(err)
 		return nil, &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
@@ -51,6 +53,7 @@ func ReadPublicReport(b *base.Base, ctx *gin.Context, params *GetPublicReportDet
 		eventID := sentry.CaptureException(err)
 		return nil, &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
@@ -59,6 +62,7 @@ func ReadPublicReport(b *base.Base, ctx *gin.Context, params *GetPublicReportDet
 		eventID := sentry.CaptureException(err)
 		return nil, &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}

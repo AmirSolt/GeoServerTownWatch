@@ -17,6 +17,7 @@ func LoadRoutes(b *base.Base) {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
 				EventID: eventID,
+				Message: "Internal Server Error",
 				Error:   err,
 			}
 			ctx.JSON(http.StatusInternalServerError, cerr)
@@ -36,6 +37,7 @@ func LoadRoutes(b *base.Base) {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
 				EventID: eventID,
+				Message: "Internal Server Error",
 				Error:   err,
 			}
 			ctx.JSON(http.StatusInternalServerError, cerr)
@@ -55,6 +57,7 @@ func LoadRoutes(b *base.Base) {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
 				EventID: eventID,
+				Message: "Internal Server Error",
 				Error:   err,
 			}
 			ctx.JSON(http.StatusInternalServerError, cerr)
@@ -74,6 +77,7 @@ func LoadRoutes(b *base.Base) {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
 				EventID: eventID,
+				Message: "Internal Server Error",
 				Error:   err,
 			}
 			ctx.JSON(http.StatusInternalServerError, cerr)
@@ -85,5 +89,25 @@ func LoadRoutes(b *base.Base) {
 			return
 		}
 		ctx.Status(http.StatusOK)
+	})
+
+	b.Engine.GET("/api/areas/read-by-user", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
+		var params *GetAreasByUserParams
+		if err := ctx.BindJSON(&params); err != nil {
+			eventID := sentry.CaptureException(err)
+			cerr := &base.CError{
+				EventID: eventID,
+				Message: "Internal Server Error",
+				Error:   err,
+			}
+			ctx.JSON(http.StatusInternalServerError, cerr)
+			return
+		}
+		area, err := ReadAreasByUser(b, ctx, params)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err)
+			return
+		}
+		ctx.JSON(http.StatusOK, area)
 	})
 }

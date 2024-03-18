@@ -2,6 +2,7 @@ package events
 
 import (
 	"net/http"
+	"time"
 	"townwatch/base"
 	"townwatch/models"
 
@@ -11,6 +12,10 @@ import (
 
 func LoadRoutes(b *base.Base) {
 
+	if !b.IS_PROD {
+		LoadTestRoutes(b)
+	}
+
 	b.Engine.GET("/api/events/scan", func(ctx *gin.Context) {
 
 		var params *models.ScanPointParams
@@ -18,6 +23,7 @@ func LoadRoutes(b *base.Base) {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
 				EventID: eventID,
+				Message: "Internal Server Error",
 				Error:   err,
 			}
 			ctx.JSON(http.StatusInternalServerError, cerr)
@@ -30,16 +36,36 @@ func LoadRoutes(b *base.Base) {
 
 		eventsRaw, err := b.Queries.ScanPoint(ctx, *params)
 		if err != nil {
-			sentry.CaptureException(err)
+			eventID := sentry.CaptureException(err)
+			cerr := &base.CError{
+				EventID: eventID,
+				Message: "Internal Server Error",
+				Error:   err,
+			}
+			ctx.JSON(http.StatusInternalServerError, cerr)
 			return
 		}
 
 		// convert to Report
 		events, errconv := base.ConvertArrayInterface[models.Event](eventsRaw)
 		if errconv != nil {
+			ctx.JSON(http.StatusInternalServerError, errconv)
 			return
 		}
 
 		ctx.JSON(http.StatusOK, events)
+	})
+
+}
+
+func LoadTestRoutes(b *base.Base) {
+	b.Engine.GET("/api/events/scan", func(ctx *gin.Context) {
+
+		err := FetchAndStoreTorontoEvents(b, ctx, time.Now().Add(-time.Duration(10)*time.Hour).UTC(), time.Now().UTC())
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err)
+			return
+		}
+		ctx.Status(http.StatusOK)
 	})
 }

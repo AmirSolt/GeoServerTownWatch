@@ -14,6 +14,7 @@ func CreateArea(b *base.Base, ctx *gin.Context, params *models.CreateAreaParams)
 		eventID := sentry.CaptureException(err)
 		return &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
@@ -26,6 +27,7 @@ func UpdateArea(b *base.Base, ctx *gin.Context, params *models.UpdateAreaParams)
 		eventID := sentry.CaptureException(err)
 		return &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
@@ -38,6 +40,7 @@ func ReadArea(b *base.Base, ctx *gin.Context, params *models.GetAreaParams) (*mo
 		eventID := sentry.CaptureException(err)
 		return nil, &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
@@ -50,8 +53,26 @@ func DeleteArea(b *base.Base, ctx *gin.Context, params *models.DeleteAreaParams)
 		eventID := sentry.CaptureException(err)
 		return &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
 	return nil
+}
+
+type GetAreasByUserParams struct {
+	UserID string
+}
+
+func ReadAreasByUser(b *base.Base, ctx *gin.Context, params *GetAreasByUserParams) (*[]models.Area, *base.CError) {
+	areas, err := b.DB.Queries.GetAreasByUser(ctx, params.UserID)
+	if err != nil {
+		eventID := sentry.CaptureException(err)
+		return nil, &base.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+	}
+	return &areas, nil
 }

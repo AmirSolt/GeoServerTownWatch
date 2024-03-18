@@ -17,6 +17,7 @@ func LoadRoutes(b *base.Base) {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
 				EventID: eventID,
+				Message: "Internal Server Error",
 				Error:   err,
 			}
 			ctx.JSON(http.StatusInternalServerError, cerr)
@@ -35,6 +36,7 @@ func LoadRoutes(b *base.Base) {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
 				EventID: eventID,
+				Message: "Internal Server Error",
 				Error:   err,
 			}
 			ctx.JSON(http.StatusInternalServerError, cerr)

@@ -61,6 +61,7 @@ func FetchAndStoreTorontoEvents(b *base.Base, ctx context.Context, fromDate time
 		eventID := sentry.CaptureException(err)
 		return &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
@@ -76,6 +77,7 @@ func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*Ar
 		eventID := sentry.CaptureException(err)
 		return nil, &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
@@ -86,6 +88,7 @@ func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*Ar
 		eventID := sentry.CaptureException(err)
 		return nil, &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
@@ -96,6 +99,7 @@ func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*Ar
 		eventID := sentry.CaptureException(err)
 		return nil, &base.CError{
 			EventID: eventID,
+			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
