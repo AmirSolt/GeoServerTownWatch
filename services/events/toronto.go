@@ -50,22 +50,22 @@ type ArcgisAttributes struct {
 	LocationCategory string  `json:"LOCATION_CATEGORY"`
 }
 
-func FetchAndStoreTorontoEvents(b *base.Base, ctx context.Context, fromDate time.Time, toDate time.Time) *base.CError {
+func FetchAndStoreTorontoEvents(b *base.Base, ctx context.Context, fromDate time.Time, toDate time.Time) (int64, *base.CError) {
 	response, cerr := fetchArcgisToronto(b, fromDate, toDate)
 	if cerr != nil {
-		return cerr
+		return 0, cerr
 	}
 	eventParams := convertArcgisTorontoResponseToEventParams(response)
-	_, err := b.DB.Queries.CreateEvents(ctx, *eventParams)
+	count, err := b.DB.Queries.CreateEvents(ctx, *eventParams)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		return &base.CError{
+		return 0, &base.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
-	return nil
+	return count, nil
 }
 
 func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*ArcgisResponse, *base.CError) {
@@ -91,6 +91,10 @@ func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*Ar
 			Message: "Internal Server Error",
 			Error:   err,
 		}
+	}
+
+	if len(response.Features) == 0 {
+		sentry.CaptureMessage(fmt.Sprintf("Toronto Arcgis Response: Feature Len is 0 | URL: %s", endpoint))
 	}
 
 	validate := validator.New(validator.WithRequiredStructEnabled())

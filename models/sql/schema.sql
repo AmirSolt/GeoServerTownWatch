@@ -35,7 +35,7 @@ CREATE INDEX event_occ_at_idx ON events ("occur_at");
 CREATE INDEX event_point_idx ON events USING GIST ("point");
 CREATE FUNCTION event_insert() RETURNS trigger AS $$
     BEGIN
-        NEW.point := ST_POINT(NEW.lat, NEW.long, 3857)
+        NEW.point := ST_POINT(NEW.lat, NEW.long, 3857);
         RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;
@@ -43,30 +43,31 @@ CREATE TRIGGER on_event_insert BEFORE INSERT OR UPDATE ON events
     FOR EACH ROW EXECUTE FUNCTION event_insert();
 
 CREATE FUNCTION scan_point(
-    lat DOUBLE PRECISION,
-    long DOUBLE PRECISION,
-    radius DOUBLE PRECISION,
-    region TEXT,
-    from_date TIMESTAMPTZ,
-    to_date TIMESTAMPTZ,
-    scan_events_count_limit INT
-    ) RETURNS SETOF reports AS $$
-        RETURN QUERY
-        SELECT *
-        FROM events
-        WHERE 
-        ST_DWithin(
-            point,
-            ST_Point(lat, long, 3857),
-           radius
-        )
-        AND region = region
-        AND occur_at >= from_date
-        AND occur_at <= to_date
-        ORDER BY occur_at
-        LIMIT scan_events_count_limit;
+  lat DOUBLE PRECISION,
+  long DOUBLE PRECISION,
+  radius DOUBLE PRECISION,
+  region TEXT,
+  from_date TIMESTAMPTZ,
+  to_date TIMESTAMPTZ,
+  scan_events_count_limit INT
+) RETURNS SETOF record AS $$
+BEGIN
+  RETURN QUERY
+    SELECT *
+    FROM events
+    WHERE  
+      ST_DWithin(
+        point,
+        ST_Point(lat, long, 3857),
+        radius
+      )
+      AND region = region
+      AND occur_at >= from_date
+      AND occur_at <= to_date
+    ORDER BY occur_at
+    LIMIT scan_events_count_limit;
+END;
 $$ LANGUAGE plpgsql;
-
 
 
 -- ======
@@ -77,7 +78,7 @@ CREATE TABLE areas (
     user_id TEXT NOT NULL UNIQUE,
     is_active BOOLEAN NOT NULL DEFAULT true,
     address TEXT NOT NULL,
-    region region NOT NULL,
+    region TEXT NOT NULL,
     radius DOUBLE PRECISION NOT NULL,
     point geometry(Point, 3857) NOT NULL,
     lat DOUBLE PRECISION NOT NULL,
@@ -86,7 +87,7 @@ CREATE TABLE areas (
 CREATE INDEX area_user_idx ON areas ("user_id");
 CREATE FUNCTION area_insert() RETURNS trigger AS $$
     BEGIN
-        NEW.point := ST_POINT(NEW.lat, NEW.long, 3857)
+        NEW.point := ST_POINT(NEW.lat, NEW.long, 3857);
         RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;
@@ -105,10 +106,11 @@ CREATE TABLE reports (
     CONSTRAINT fk_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE OR REPLACE FUNCTION create_global_reports(from_date TIMESTAMPTZ, to_date TIMESTAMPTZ, scan_events_count_limit INT)
-RETURNS SETOF reports AS $$
+RETURNS SETOF record AS $$
 DECLARE
     area_record RECORD;
     event_ids INT[];
+    event_id INT;
     new_report RECORD;
 BEGIN
     FOR area_record IN SELECT * FROM areas WHERE is_active = true LOOP
@@ -146,4 +148,3 @@ CREATE TABLE report_events (
     CONSTRAINT fk_event FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE UNIQUE INDEX report_idx ON report_events("report_id");
-

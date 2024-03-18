@@ -16,7 +16,12 @@ func pushToDB() {
 	conn := loadDB()
 	defer conn.Close(context.Background())
 
-	response, err := conn.Exec(context.Background(), "models/sql/schema.sql")
+	schemaFilePath := "models/sql/schema.sql"
+	contentSchema, errSchema := os.ReadFile(schemaFilePath)
+	if errSchema != nil {
+		log.Fatal(errSchema)
+	}
+	response, err := conn.Exec(context.Background(), string(contentSchema))
 	if err != nil {
 		log.Fatal("Error db:", err)
 	}

@@ -10,7 +10,7 @@ import (
 
 func LoadCronJobs(b *base.Base, c *cron.Cron) {
 	c.AddFunc("0 30 * * * *", func() {
-		err := FetchAndStoreTorontoEvents(b, context.Background(), time.Now().Add(-time.Duration(10)*time.Hour).UTC(), time.Now().UTC())
+		_, err := FetchAndStoreTorontoEvents(b, context.Background(), time.Now().Add(-time.Duration(10)*time.Hour).UTC(), time.Now().UTC())
 		if err != nil {
 			return
 		}

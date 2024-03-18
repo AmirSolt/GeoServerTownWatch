@@ -59,13 +59,13 @@ func LoadRoutes(b *base.Base) {
 }
 
 func LoadTestRoutes(b *base.Base) {
-	b.Engine.GET("/api/events/scan", func(ctx *gin.Context) {
+	b.Engine.GET("/api/test/events/fetch", func(ctx *gin.Context) {
 
-		err := FetchAndStoreTorontoEvents(b, ctx, time.Now().Add(-time.Duration(10)*time.Hour).UTC(), time.Now().UTC())
+		count, err := FetchAndStoreTorontoEvents(b, ctx, time.Now().Add(-time.Duration(10)*time.Hour).UTC(), time.Now().UTC())
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		ctx.Status(http.StatusOK)
+		ctx.JSON(http.StatusOK, map[string]any{"count": count})
 	})
 }
