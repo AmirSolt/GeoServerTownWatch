@@ -18,21 +18,24 @@ CREATE TYPE crime_type AS ENUM (
 );
 
 
+
+
 CREATE TABLE events (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     occur_at TIMESTAMPTZ NOT NULL,
-    external_id TEXT NOT NULL,
+    external_id TEXT NOT NULL UNIQUE,
     neighborhood TEXT,
     location_type TEXT,
     crime_type crime_type NOT NULL,
     region TEXT NOT NULL,
-    point geometry(Point, 3857) NOT NULL,
+    point geometry(Point, 3857),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
 );
 CREATE INDEX event_occ_at_idx ON events ("occur_at");
 CREATE INDEX event_point_idx ON events USING GIST ("point");
+CREATE TEMPORARY TABLE _temp_events (LIKE events INCLUDING ALL) ON COMMIT DROP;
 CREATE FUNCTION event_insert() RETURNS trigger AS $$
     BEGIN
         NEW.point := ST_POINT(NEW.lat, NEW.long, 3857);
@@ -53,7 +56,7 @@ CREATE TABLE scans (
     events_count INT NOT NULL,
 
     region TEXT NOT NULL,
-    point geometry(Point, 3857) NOT NULL,
+    point geometry(Point, 3857),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
 );
@@ -139,7 +142,7 @@ CREATE TABLE areas (
     address TEXT NOT NULL,
     region TEXT NOT NULL,
     radius DOUBLE PRECISION NOT NULL,
-    point geometry(Point, 3857) NOT NULL,
+    point geometry(Point, 3857),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
 );

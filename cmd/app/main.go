@@ -15,6 +15,8 @@ func main() {
 	b := base.LoadBase()
 	defer b.Kill()
 
+	events.LoadInit(b)
+
 	events.LoadRoutes(b)
 	areas.LoadRoutes(b)
 	reports.LoadRoutes(b)

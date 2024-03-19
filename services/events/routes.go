@@ -2,7 +2,6 @@ package events
 
 import (
 	"net/http"
-	"time"
 	"townwatch/base"
 	"townwatch/models"
 
@@ -12,9 +11,9 @@ import (
 
 func LoadRoutes(b *base.Base) {
 
-	if !b.IS_PROD {
-		LoadTestRoutes(b)
-	}
+	// if !b.IS_PROD {
+	// 	LoadTestRoutes(b)
+	// }
 
 	b.Engine.GET("/api/events/scan", func(ctx *gin.Context) {
 
@@ -58,14 +57,14 @@ func LoadRoutes(b *base.Base) {
 
 }
 
-func LoadTestRoutes(b *base.Base) {
-	b.Engine.GET("/api/test/events/fetch", func(ctx *gin.Context) {
+// func LoadTestRoutes(b *base.Base) {
+// 	b.Engine.GET("/api/test/events/fetch", func(ctx *gin.Context) {
 
-		count, err := FetchAndStoreTorontoEvents(b, ctx, time.Now().Add(-time.Duration(10)*time.Hour).UTC(), time.Now().UTC())
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, err)
-			return
-		}
-		ctx.JSON(http.StatusOK, map[string]any{"count": count})
-	})
-}
+// 		fetchCount, err := FetchAndStoreTorontoEvents(b, ctx, time.Now().Add(-time.Duration(10)*time.Hour).UTC(), time.Now().UTC())
+// 		if err != nil {
+// 			ctx.JSON(http.StatusInternalServerError, err)
+// 			return
+// 		}
+// 		ctx.JSON(http.StatusOK, map[string]any{"fetched_count": fetchCount})
+// 	})
+// }

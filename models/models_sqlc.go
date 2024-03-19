@@ -67,7 +67,7 @@ type Area struct {
 	UserID    string             `json:"user_id"`
 	IsActive  bool               `json:"is_active"`
 	Address   string             `json:"address"`
-	Region    interface{}        `json:"region"`
+	Region    string             `json:"region"`
 	Radius    float64            `json:"radius"`
 	Point     interface{}        `json:"point"`
 	Lat       float64            `json:"lat"`
@@ -100,4 +100,31 @@ type ReportEvent struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	ReportID  pgtype.UUID        `json:"report_id"`
 	EventID   int32              `json:"event_id"`
+}
+
+type Scan struct {
+	ID          int32              `json:"id"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Radius      float64            `json:"radius"`
+	FromDate    pgtype.Timestamptz `json:"from_date"`
+	ToDate      pgtype.Timestamptz `json:"to_date"`
+	EventsCount int32              `json:"events_count"`
+	Region      string             `json:"region"`
+	Point       interface{}        `json:"point"`
+	Lat         float64            `json:"lat"`
+	Long        float64            `json:"long"`
+}
+
+type TempEvent struct {
+	ID           int32              `json:"id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	OccurAt      pgtype.Timestamptz `json:"occur_at"`
+	ExternalID   string             `json:"external_id"`
+	Neighborhood pgtype.Text        `json:"neighborhood"`
+	LocationType pgtype.Text        `json:"location_type"`
+	CrimeType    CrimeType          `json:"crime_type"`
+	Region       string             `json:"region"`
+	Point        interface{}        `json:"point"`
+	Lat          float64            `json:"lat"`
+	Long         float64            `json:"long"`
 }

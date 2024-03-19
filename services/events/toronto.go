@@ -50,22 +50,72 @@ type ArcgisAttributes struct {
 	LocationCategory string  `json:"LOCATION_CATEGORY"`
 }
 
-func FetchAndStoreTorontoEvents(b *base.Base, ctx context.Context, fromDate time.Time, toDate time.Time) (int64, *base.CError) {
+func FetchAndStoreTorontoEvents(b *base.Base, ctx context.Context, fromDate time.Time, toDate time.Time) (int, *base.CError) {
 	response, cerr := fetchArcgisToronto(b, fromDate, toDate)
 	if cerr != nil {
 		return 0, cerr
 	}
 	eventParams := convertArcgisTorontoResponseToEventParams(response)
-	count, err := b.DB.Queries.CreateEvents(ctx, *eventParams)
+	fetchCount := len(*eventParams)
+
+	eventParams = removeEventParamsDuplicates(eventParams)
+	err := storeEvents(b, ctx, eventParams)
+	if err != nil {
+		return 0, err
+	}
+	return fetchCount, nil
+}
+
+func storeEvents(b *base.Base, ctx context.Context, eventParams *[]models.CreateTempEventsParams) *base.CError {
+	tx, err := b.DB.Pool.Begin(ctx)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		return 0, &base.CError{
+		return &base.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
 		}
 	}
-	return count, nil
+	defer tx.Rollback(ctx)
+	qtx := b.DB.Queries.WithTx(tx)
+
+	if err := qtx.CreateTempEventsTable(ctx); err != nil {
+		eventID := sentry.CaptureException(err)
+		return &base.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+	}
+	_, errInsert := qtx.CreateTempEvents(ctx, *eventParams)
+	if errInsert != nil {
+		eventID := sentry.CaptureException(errInsert)
+		return &base.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   errInsert,
+		}
+	}
+
+	if err := qtx.MoveFromTempEventsToEvents(ctx); err != nil {
+		eventID := sentry.CaptureException(err)
+		return &base.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		eventID := sentry.CaptureException(err)
+		return &base.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+	}
+
+	return nil
 }
 
 func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*ArcgisResponse, *base.CError) {
@@ -110,12 +160,12 @@ func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*Ar
 	return &response, nil
 }
 
-func convertArcgisTorontoResponseToEventParams(arcgisResponse *ArcgisResponse) *[]models.CreateEventsParams {
-	reportsParams := []models.CreateEventsParams{}
+func convertArcgisTorontoResponseToEventParams(arcgisResponse *ArcgisResponse) *[]models.CreateTempEventsParams {
+	reportsParams := []models.CreateTempEventsParams{}
 
 	for _, arcReport := range arcgisResponse.Features {
 		secs := int64(arcReport.Attributes.OccDateAgol/1000.0) + int64(arcReport.Attributes.Hour*60*60)
-		reportsParams = append(reportsParams, models.CreateEventsParams{
+		reportsParams = append(reportsParams, models.CreateTempEventsParams{
 			OccurAt:      pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
 			ExternalID:   arcReport.Attributes.EventUniqueId,
 			Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Neighbourhood158), Valid: true},
@@ -128,6 +178,21 @@ func convertArcgisTorontoResponseToEventParams(arcgisResponse *ArcgisResponse) *
 	}
 
 	return &reportsParams
+}
+
+func removeEventParamsDuplicates(params *[]models.CreateTempEventsParams) *[]models.CreateTempEventsParams {
+	uniqueMap := make(map[string]models.CreateTempEventsParams)
+	for _, param := range *params {
+		// Only add to the map if ExternalID doesn't exist already
+		if _, ok := uniqueMap[param.ExternalID]; !ok {
+			uniqueMap[param.ExternalID] = param
+		}
+	}
+	uniqueParams := make([]models.CreateTempEventsParams, 0, len(uniqueMap))
+	for _, v := range uniqueMap {
+		uniqueParams = append(uniqueParams, v)
+	}
+	return &uniqueParams
 }
 
 // func CreateReports(base *base.Base, reportsParams *[]models.CreateEventsParams) {

@@ -11,17 +11,39 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countEvents = `-- name: CountEvents :one
+SELECT count(*) FROM events
+`
+
+func (q *Queries) CountEvents(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countEvents)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countTempEvents = `-- name: CountTempEvents :one
+SELECT count(*) FROM _temp_events
+`
+
+func (q *Queries) CountTempEvents(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countTempEvents)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createArea = `-- name: CreateArea :exec
 INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3,$4,$5,$6)
 `
 
 type CreateAreaParams struct {
-	UserID  string      `json:"user_id"`
-	Address string      `json:"address"`
-	Region  interface{} `json:"region"`
-	Radius  float64     `json:"radius"`
-	Lat     float64     `json:"lat"`
-	Long    float64     `json:"long"`
+	UserID  string  `json:"user_id"`
+	Address string  `json:"address"`
+	Region  string  `json:"region"`
+	Radius  float64 `json:"radius"`
+	Lat     float64 `json:"lat"`
+	Long    float64 `json:"long"`
 }
 
 func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) error {
@@ -34,17 +56,6 @@ func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) error {
 		arg.Long,
 	)
 	return err
-}
-
-type CreateEventsParams struct {
-	OccurAt      pgtype.Timestamptz `json:"occur_at"`
-	ExternalID   string             `json:"external_id"`
-	Neighborhood pgtype.Text        `json:"neighborhood"`
-	LocationType pgtype.Text        `json:"location_type"`
-	CrimeType    CrimeType          `json:"crime_type"`
-	Region       string             `json:"region"`
-	Lat          float64            `json:"lat"`
-	Long         float64            `json:"long"`
 }
 
 const createGlobalReports = `-- name: CreateGlobalReports :many
@@ -75,6 +86,29 @@ func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalRepor
 		return nil, err
 	}
 	return items, nil
+}
+
+type CreateTempEventsParams struct {
+	OccurAt      pgtype.Timestamptz `json:"occur_at"`
+	ExternalID   string             `json:"external_id"`
+	Neighborhood pgtype.Text        `json:"neighborhood"`
+	LocationType pgtype.Text        `json:"location_type"`
+	CrimeType    CrimeType          `json:"crime_type"`
+	Region       string             `json:"region"`
+	Lat          float64            `json:"lat"`
+	Long         float64            `json:"long"`
+}
+
+const createTempEventsTable = `-- name: CreateTempEventsTable :exec
+
+CREATE TEMPORARY TABLE _temp_events (LIKE events INCLUDING ALL) ON COMMIT DROP
+`
+
+// =========================================
+// events
+func (q *Queries) CreateTempEventsTable(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, createTempEventsTable)
+	return err
 }
 
 const deleteArea = `-- name: DeleteArea :exec
@@ -260,6 +294,43 @@ func (q *Queries) GetPublicReportDetails(ctx context.Context, id pgtype.UUID) (G
 	var i GetPublicReportDetailsRow
 	err := row.Scan(&i.ID, &i.CreatedAt, &i.IsReported)
 	return i, err
+}
+
+const moveFromTempEventsToEvents = `-- name: MoveFromTempEventsToEvents :exec
+INSERT INTO events (
+    occur_at,
+    external_id,
+    neighborhood,
+    location_type,
+    crime_type,
+    region,
+    lat,
+    long
+)
+SELECT
+    occur_at,
+    external_id,
+    neighborhood,
+    location_type,
+    crime_type,
+    region,
+    lat,
+    long
+FROM _temp_events
+ON CONFLICT (external_id) DO UPDATE
+    SET
+        occur_at = EXCLUDED.occur_at,
+        neighborhood = EXCLUDED.neighborhood,
+        location_type = EXCLUDED.location_type,
+        crime_type = EXCLUDED.crime_type,
+        region = EXCLUDED.region,
+        lat = EXCLUDED.lat,
+        long = EXCLUDED.long
+`
+
+func (q *Queries) MoveFromTempEventsToEvents(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, moveFromTempEventsToEvents)
+	return err
 }
 
 const scanPoint = `-- name: ScanPoint :many

@@ -9,13 +9,13 @@ import (
 	"context"
 )
 
-// iteratorForCreateEvents implements pgx.CopyFromSource.
-type iteratorForCreateEvents struct {
-	rows                 []CreateEventsParams
+// iteratorForCreateTempEvents implements pgx.CopyFromSource.
+type iteratorForCreateTempEvents struct {
+	rows                 []CreateTempEventsParams
 	skippedFirstNextCall bool
 }
 
-func (r *iteratorForCreateEvents) Next() bool {
+func (r *iteratorForCreateTempEvents) Next() bool {
 	if len(r.rows) == 0 {
 		return false
 	}
@@ -27,7 +27,7 @@ func (r *iteratorForCreateEvents) Next() bool {
 	return len(r.rows) > 0
 }
 
-func (r iteratorForCreateEvents) Values() ([]interface{}, error) {
+func (r iteratorForCreateTempEvents) Values() ([]interface{}, error) {
 	return []interface{}{
 		r.rows[0].OccurAt,
 		r.rows[0].ExternalID,
@@ -40,12 +40,10 @@ func (r iteratorForCreateEvents) Values() ([]interface{}, error) {
 	}, nil
 }
 
-func (r iteratorForCreateEvents) Err() error {
+func (r iteratorForCreateTempEvents) Err() error {
 	return nil
 }
 
-// =========================================
-// events
-func (q *Queries) CreateEvents(ctx context.Context, arg []CreateEventsParams) (int64, error) {
-	return q.db.CopyFrom(ctx, []string{"events"}, []string{"occur_at", "external_id", "neighborhood", "location_type", "crime_type", "region", "lat", "long"}, &iteratorForCreateEvents{rows: arg})
+func (q *Queries) CreateTempEvents(ctx context.Context, arg []CreateTempEventsParams) (int64, error) {
+	return q.db.CopyFrom(ctx, []string{"_temp_events"}, []string{"occur_at", "external_id", "neighborhood", "location_type", "crime_type", "region", "lat", "long"}, &iteratorForCreateTempEvents{rows: arg})
 }
