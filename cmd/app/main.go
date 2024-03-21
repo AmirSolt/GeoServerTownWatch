@@ -21,13 +21,15 @@ func main() {
 	areas.LoadRoutes(b)
 	reports.LoadRoutes(b)
 
-	go func() {
-		c := cron.New()
-		events.LoadCronJobs(b, c)
-		reports.LoadCronJobs(b, c)
-		c.Start()
-		defer c.Stop()
-	}()
+	if b.IS_PROD {
+		go func() {
+			c := cron.New()
+			events.LoadCronJobs(b, c)
+			reports.LoadCronJobs(b, c)
+			c.Start()
+			defer c.Stop()
+		}()
+	}
 
 	fmt.Println("=======")
 	fmt.Println(b.DOMAIN)

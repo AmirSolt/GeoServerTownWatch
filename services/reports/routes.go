@@ -11,8 +11,14 @@ import (
 
 func LoadRoutes(b *base.Base) {
 
-	b.Engine.GET("/api/private/reports/read", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
-		var params *models.GetPrivateReportDetailsParams
+	b.Engine.GET("/api/reports/read", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
+		censorEventsStr := ctx.DefaultQuery("censor_events", "true")
+		censorEvents := true
+		if censorEventsStr == "false" {
+			censorEvents = false
+		}
+
+		var params *models.GetReportDetailsParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
@@ -23,30 +29,12 @@ func LoadRoutes(b *base.Base) {
 			ctx.JSON(http.StatusInternalServerError, cerr)
 			return
 		}
-		report, err := ReadPrivateReport(b, ctx, params)
+		report, err := ReadPrivateReport(b, ctx, params, censorEvents)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		ctx.JSON(http.StatusOK, report)
-	})
-	b.Engine.GET("/api/public/reports/read", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
-		var params *GetPublicReportDetailsParams
-		if err := ctx.BindJSON(&params); err != nil {
-			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
-				EventID: eventID,
-				Message: "Internal Server Error",
-				Error:   err,
-			}
-			ctx.JSON(http.StatusInternalServerError, cerr)
-			return
-		}
-		report, err := ReadPublicReport(b, ctx, params)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, err)
-			return
-		}
+
 		ctx.JSON(http.StatusOK, report)
 	})
 }

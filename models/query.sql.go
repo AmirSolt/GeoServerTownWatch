@@ -33,8 +33,8 @@ func (q *Queries) CountTempEvents(ctx context.Context) (int64, error) {
 	return count, err
 }
 
-const createArea = `-- name: CreateArea :exec
-INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3,$4,$5,$6)
+const createArea = `-- name: CreateArea :one
+INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, created_at, user_id, is_active, address, region, radius, point, lat, long
 `
 
 type CreateAreaParams struct {
@@ -46,8 +46,8 @@ type CreateAreaParams struct {
 	Long    float64 `json:"long"`
 }
 
-func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) error {
-	_, err := q.db.Exec(ctx, createArea,
+func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) (Area, error) {
+	row := q.db.QueryRow(ctx, createArea,
 		arg.UserID,
 		arg.Address,
 		arg.Region,
@@ -55,7 +55,20 @@ func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) error {
 		arg.Lat,
 		arg.Long,
 	)
-	return err
+	var i Area
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.IsActive,
+		&i.Address,
+		&i.Region,
+		&i.Radius,
+		&i.Point,
+		&i.Lat,
+		&i.Long,
+	)
+	return i, err
 }
 
 const createGlobalReports = `-- name: CreateGlobalReports :many
@@ -111,18 +124,32 @@ func (q *Queries) CreateTempEventsTable(ctx context.Context) error {
 	return err
 }
 
-const deleteArea = `-- name: DeleteArea :exec
+const deleteArea = `-- name: DeleteArea :one
 DELETE FROM areas WHERE id = $1 AND user_id=$2
+RETURNING id, created_at, user_id, is_active, address, region, radius, point, lat, long
 `
 
 type DeleteAreaParams struct {
-	ID     int32  `json:"id"`
-	UserID string `json:"user_id"`
+	ID     pgtype.UUID `json:"id"`
+	UserID string      `json:"user_id"`
 }
 
-func (q *Queries) DeleteArea(ctx context.Context, arg DeleteAreaParams) error {
-	_, err := q.db.Exec(ctx, deleteArea, arg.ID, arg.UserID)
-	return err
+func (q *Queries) DeleteArea(ctx context.Context, arg DeleteAreaParams) (Area, error) {
+	row := q.db.QueryRow(ctx, deleteArea, arg.ID, arg.UserID)
+	var i Area
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.IsActive,
+		&i.Address,
+		&i.Region,
+		&i.Radius,
+		&i.Point,
+		&i.Lat,
+		&i.Long,
+	)
+	return i, err
 }
 
 const getArea = `-- name: GetArea :one
@@ -133,8 +160,8 @@ WHERE id = $1 AND user_id=$2
 `
 
 type GetAreaParams struct {
-	ID     int32  `json:"id"`
-	UserID string `json:"user_id"`
+	ID     pgtype.UUID `json:"id"`
+	UserID string      `json:"user_id"`
 }
 
 // =========================================
@@ -234,26 +261,29 @@ func (q *Queries) GetEventsByReport(ctx context.Context, id pgtype.UUID) ([]Even
 	return items, nil
 }
 
-const getPrivateReportDetails = `-- name: GetPrivateReportDetails :one
+const getReportDetails = `-- name: GetReportDetails :one
+
 SELECT r.id, r.created_at, r.user_id, r.is_reported, r.area_id, a.id, a.created_at, a.user_id, a.is_active, a.address, a.region, a.radius, a.point, a.lat, a.long
 FROM reports r
 INNER JOIN areas a ON r.area_id = a.id
 WHERE r.id = $1 AND r.user_id = $2
 `
 
-type GetPrivateReportDetailsParams struct {
+type GetReportDetailsParams struct {
 	ID     pgtype.UUID `json:"id"`
 	UserID string      `json:"user_id"`
 }
 
-type GetPrivateReportDetailsRow struct {
+type GetReportDetailsRow struct {
 	Report Report `json:"report"`
 	Area   Area   `json:"area"`
 }
 
-func (q *Queries) GetPrivateReportDetails(ctx context.Context, arg GetPrivateReportDetailsParams) (GetPrivateReportDetailsRow, error) {
-	row := q.db.QueryRow(ctx, getPrivateReportDetails, arg.ID, arg.UserID)
-	var i GetPrivateReportDetailsRow
+// =========================================
+// reports
+func (q *Queries) GetReportDetails(ctx context.Context, arg GetReportDetailsParams) (GetReportDetailsRow, error) {
+	row := q.db.QueryRow(ctx, getReportDetails, arg.ID, arg.UserID)
+	var i GetReportDetailsRow
 	err := row.Scan(
 		&i.Report.ID,
 		&i.Report.CreatedAt,
@@ -271,28 +301,6 @@ func (q *Queries) GetPrivateReportDetails(ctx context.Context, arg GetPrivateRep
 		&i.Area.Lat,
 		&i.Area.Long,
 	)
-	return i, err
-}
-
-const getPublicReportDetails = `-- name: GetPublicReportDetails :one
-
-
-SELECT id, created_at, is_reported  FROM reports
-WHERE id = $1
-`
-
-type GetPublicReportDetailsRow struct {
-	ID         pgtype.UUID        `json:"id"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
-	IsReported bool               `json:"is_reported"`
-}
-
-// =========================================
-// reports
-func (q *Queries) GetPublicReportDetails(ctx context.Context, id pgtype.UUID) (GetPublicReportDetailsRow, error) {
-	row := q.db.QueryRow(ctx, getPublicReportDetails, id)
-	var i GetPublicReportDetailsRow
-	err := row.Scan(&i.ID, &i.CreatedAt, &i.IsReported)
 	return i, err
 }
 
@@ -317,15 +325,7 @@ SELECT
     lat,
     long
 FROM _temp_events
-ON CONFLICT (external_id) DO UPDATE
-    SET
-        occur_at = EXCLUDED.occur_at,
-        neighborhood = EXCLUDED.neighborhood,
-        location_type = EXCLUDED.location_type,
-        crime_type = EXCLUDED.crime_type,
-        region = EXCLUDED.region,
-        lat = EXCLUDED.lat,
-        long = EXCLUDED.long
+ON CONFLICT (external_id) DO NOTHING
 `
 
 func (q *Queries) MoveFromTempEventsToEvents(ctx context.Context) error {
@@ -378,26 +378,27 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]interfa
 	return items, nil
 }
 
-const updateArea = `-- name: UpdateArea :exec
+const updateArea = `-- name: UpdateArea :one
 UPDATE areas SET 
 address = $3,
 radius = $4,
 lat = $5,
 long = $6
 WHERE id = $1 AND user_id = $2
+RETURNING id, created_at, user_id, is_active, address, region, radius, point, lat, long
 `
 
 type UpdateAreaParams struct {
-	ID      int32   `json:"id"`
-	UserID  string  `json:"user_id"`
-	Address string  `json:"address"`
-	Radius  float64 `json:"radius"`
-	Lat     float64 `json:"lat"`
-	Long    float64 `json:"long"`
+	ID      pgtype.UUID `json:"id"`
+	UserID  string      `json:"user_id"`
+	Address string      `json:"address"`
+	Radius  float64     `json:"radius"`
+	Lat     float64     `json:"lat"`
+	Long    float64     `json:"long"`
 }
 
-func (q *Queries) UpdateArea(ctx context.Context, arg UpdateAreaParams) error {
-	_, err := q.db.Exec(ctx, updateArea,
+func (q *Queries) UpdateArea(ctx context.Context, arg UpdateAreaParams) (Area, error) {
+	row := q.db.QueryRow(ctx, updateArea,
 		arg.ID,
 		arg.UserID,
 		arg.Address,
@@ -405,5 +406,18 @@ func (q *Queries) UpdateArea(ctx context.Context, arg UpdateAreaParams) error {
 		arg.Lat,
 		arg.Long,
 	)
-	return err
+	var i Area
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UserID,
+		&i.IsActive,
+		&i.Address,
+		&i.Region,
+		&i.Radius,
+		&i.Point,
+		&i.Lat,
+		&i.Long,
+	)
+	return i, err
 }

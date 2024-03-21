@@ -2,6 +2,7 @@ package events
 
 import (
 	"net/http"
+	"reflect"
 	"townwatch/base"
 	"townwatch/models"
 
@@ -11,11 +12,12 @@ import (
 
 func LoadRoutes(b *base.Base) {
 
-	// if !b.IS_PROD {
-	// 	LoadTestRoutes(b)
-	// }
-
-	b.Engine.GET("/api/events/scan", func(ctx *gin.Context) {
+	b.Engine.GET("/api/events/scan", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
+		censorEventsStr := ctx.DefaultQuery("censor_events", "true")
+		censorEvents := true
+		if censorEventsStr == "false" {
+			censorEvents = false
+		}
 
 		var params *models.ScanPointParams
 		if err := ctx.BindJSON(&params); err != nil {
@@ -52,19 +54,35 @@ func LoadRoutes(b *base.Base) {
 			return
 		}
 
-		ctx.JSON(http.StatusOK, events)
+		var cenEvents []models.Event
+		if censorEvents {
+			cenEvents = CensorEvents(events)
+		}
+
+		ctx.JSON(http.StatusOK, cenEvents)
 	})
 
 }
 
-// func LoadTestRoutes(b *base.Base) {
-// 	b.Engine.GET("/api/test/events/fetch", func(ctx *gin.Context) {
+func CensorEvents(events []models.Event) []models.Event {
+	cenEvents := []models.Event{}
+	for _, event := range events {
+		cenEvents = append(cenEvents, CensorEvent(event))
+	}
+	return cenEvents
+}
+func CensorEvent(event models.Event) models.Event {
 
-// 		fetchCount, err := FetchAndStoreTorontoEvents(b, ctx, time.Now().Add(-time.Duration(10)*time.Hour).UTC(), time.Now().UTC())
-// 		if err != nil {
-// 			ctx.JSON(http.StatusInternalServerError, err)
-// 			return
-// 		}
-// 		ctx.JSON(http.StatusOK, map[string]any{"fetched_count": fetchCount})
-// 	})
-// }
+	uncensoredFields := map[string]bool{"ID": true, "Lat": true, "Long": true}
+
+	eventType := reflect.TypeOf(event)
+	eventValue := reflect.ValueOf(&event).Elem()
+	for i := 0; i < eventType.NumField(); i++ {
+		fieldName := eventType.Field(i).Name
+		if uncensoredFields[fieldName] {
+			field := eventValue.FieldByName(fieldName)
+			field.Set(reflect.Zero(field.Type()))
+		}
+	}
+	return event
+}

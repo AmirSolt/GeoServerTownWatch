@@ -60,29 +60,26 @@ SELECT * FROM areas
 WHERE user_id = $1;
 
 
--- name: CreateArea :exec
-INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3,$4,$5,$6);
+-- name: CreateArea :one
+INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *;
 
--- name: UpdateArea :exec
+-- name: UpdateArea :one
 UPDATE areas SET 
 address = $3,
 radius = $4,
 lat = $5,
 long = $6
-WHERE id = $1 AND user_id = $2;
+WHERE id = $1 AND user_id = $2
+RETURNING *;
 
--- name: DeleteArea :exec
-DELETE FROM areas WHERE id = $1 AND user_id=$2;
+-- name: DeleteArea :one
+DELETE FROM areas WHERE id = $1 AND user_id=$2
+RETURNING *;
 
 -- =========================================
 -- reports
 
-
--- name: GetPublicReportDetails :one
-SELECT id, created_at, is_reported  FROM reports
-WHERE id = $1;
-
--- name: GetPrivateReportDetails :one
+-- name: GetReportDetails :one
 SELECT sqlc.embed(r), sqlc.embed(a)
 FROM reports r
 INNER JOIN areas a ON r.area_id = a.id

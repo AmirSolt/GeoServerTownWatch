@@ -135,7 +135,7 @@ $$ LANGUAGE plpgsql;
 -- ======
 
 CREATE TABLE areas (
-    id SERIAL PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id TEXT NOT NULL UNIQUE,
     is_active BOOLEAN NOT NULL DEFAULT true,
@@ -164,7 +164,7 @@ CREATE TABLE reports (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id TEXT NOT NULL UNIQUE,
     is_reported BOOLEAN NOT NULL DEFAULT false,
-    area_id INT NOT NULL REFERENCES areas(id),
+    area_id uuid NOT NULL REFERENCES areas(id),
     CONSTRAINT fk_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 CREATE OR REPLACE FUNCTION create_global_reports(from_date TIMESTAMPTZ, to_date TIMESTAMPTZ, scan_events_count_limit INT)

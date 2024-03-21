@@ -23,12 +23,12 @@ func LoadRoutes(b *base.Base) {
 			ctx.JSON(http.StatusInternalServerError, cerr)
 			return
 		}
-		err := CreateArea(b, ctx, params)
+		area, err := CreateArea(b, ctx, params)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		ctx.Status(http.StatusOK)
+		ctx.JSON(http.StatusOK, area)
 	})
 
 	b.Engine.GET("/api/areas/read", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
@@ -63,12 +63,12 @@ func LoadRoutes(b *base.Base) {
 			ctx.JSON(http.StatusInternalServerError, cerr)
 			return
 		}
-		err := UpdateArea(b, ctx, params)
+		area, err := UpdateArea(b, ctx, params)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		ctx.Status(http.StatusOK)
+		ctx.JSON(http.StatusOK, area)
 	})
 
 	b.Engine.DELETE("/api/areas/delete", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
@@ -83,15 +83,15 @@ func LoadRoutes(b *base.Base) {
 			ctx.JSON(http.StatusInternalServerError, cerr)
 			return
 		}
-		err := DeleteArea(b, ctx, params)
+		area, err := DeleteArea(b, ctx, params)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		ctx.Status(http.StatusOK)
+		ctx.JSON(http.StatusOK, area)
 	})
 
-	b.Engine.GET("/api/areas/read-by-user", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
+	b.Engine.GET("/api/areas/user", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
 		var params *GetAreasByUserParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
