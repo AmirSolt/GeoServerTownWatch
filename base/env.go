@@ -1,9 +1,9 @@
 package base
 
 import (
+	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
@@ -21,10 +21,9 @@ type Env struct {
 
 func (base *Base) loadEnv() {
 
-	if err := godotenv.Load(filepath.Join(base.RootDir, ".env")); err != nil {
-		log.Fatal("Error .env:", err)
+	if err := godotenv.Load(".env"); err != nil {
+		fmt.Println("Warrning .env does not exist:", err)
 	}
-
 	env := Env{
 		DOMAIN:             os.Getenv("DOMAIN"),
 		USER_SERVER_URL:    os.Getenv("USER_SERVER_URL"),
