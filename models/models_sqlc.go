@@ -69,7 +69,7 @@ type Area struct {
 	Address   string             `json:"address"`
 	Region    string             `json:"region"`
 	Radius    float64            `json:"radius"`
-	Point     interface{}        `json:"point"`
+	Point     *string            `json:"point"`
 	Lat       float64            `json:"lat"`
 	Long      float64            `json:"long"`
 }
@@ -83,7 +83,7 @@ type Event struct {
 	LocationType pgtype.Text        `json:"location_type"`
 	CrimeType    CrimeType          `json:"crime_type"`
 	Region       string             `json:"region"`
-	Point        interface{}        `json:"point"`
+	Point        *string            `json:"point"`
 	Lat          float64            `json:"lat"`
 	Long         float64            `json:"long"`
 }

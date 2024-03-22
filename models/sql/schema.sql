@@ -137,7 +137,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE areas (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    user_id TEXT NOT NULL UNIQUE,
+    user_id TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true,
     address TEXT NOT NULL,
     region TEXT NOT NULL,

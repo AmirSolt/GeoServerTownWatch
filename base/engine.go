@@ -14,6 +14,7 @@ func (base *Base) loadEngine() {
 	engine := gin.Default()
 
 	engine.GET("/ping", func(ctx *gin.Context) { ctx.String(http.StatusOK, "pong") })
+	engine.Use(SecretRouteMiddleware(base))
 
 	base.Engine = engine
 }

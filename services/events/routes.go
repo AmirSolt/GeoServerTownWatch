@@ -12,7 +12,7 @@ import (
 
 func LoadRoutes(b *base.Base) {
 
-	b.Engine.GET("/api/events/scan", base.SecretRouteMiddleware(b), func(ctx *gin.Context) {
+	b.Engine.GET("/api/events/scan", func(ctx *gin.Context) {
 		censorEventsStr := ctx.DefaultQuery("censor_events", "true")
 		censorEvents := true
 		if censorEventsStr == "false" {

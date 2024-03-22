@@ -14,4 +14,12 @@ sql:
             output_models_file_name: models_sqlc.go
             output_querier_file_name: querier_sqlc.go
             output_copyfrom_file_name: copyfrom_sqlc.go
-
+            overrides:
+              - column: "areas.point"
+                go_type: 
+                  type: "string"
+                  pointer: true
+              - column: "events.point"
+                go_type: 
+                  type: "string"
+                  pointer: true
