@@ -11,7 +11,7 @@ import (
 
 func LoadRoutes(b *base.Base) {
 
-	b.Engine.GET("/api/reports/read", func(ctx *gin.Context) {
+	b.Engine.POST("/api/reports/read", func(ctx *gin.Context) {
 		censorEventsStr := ctx.DefaultQuery("censor_events", "true")
 		censorEvents := true
 		if censorEventsStr == "false" {

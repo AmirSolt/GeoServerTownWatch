@@ -1,7 +1,6 @@
 package areas
 
 import (
-	"errors"
 	"net/http"
 	"townwatch/base"
 	"townwatch/models"
@@ -25,11 +24,6 @@ func LoadRoutes(b *base.Base) {
 			return
 		}
 
-		testErr := errors.New("test error")
-		eventID := sentry.CaptureException(testErr)
-		ctx.JSON(http.StatusInternalServerError, &base.CError{Message: testErr.Error(), EventID: eventID, Error: testErr})
-		return
-
 		area, err := CreateArea(b, ctx, params)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err)
@@ -38,7 +32,7 @@ func LoadRoutes(b *base.Base) {
 		ctx.JSON(http.StatusOK, area)
 	})
 
-	b.Engine.GET("/api/areas/read", func(ctx *gin.Context) {
+	b.Engine.POST("/api/areas/read", func(ctx *gin.Context) {
 		var params *models.GetAreaParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
@@ -98,7 +92,7 @@ func LoadRoutes(b *base.Base) {
 		ctx.JSON(http.StatusOK, area)
 	})
 
-	b.Engine.GET("/api/areas/user", func(ctx *gin.Context) {
+	b.Engine.POST("/api/areas/user", func(ctx *gin.Context) {
 		var params *GetAreasByUserParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
