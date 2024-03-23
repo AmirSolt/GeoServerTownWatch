@@ -8,9 +8,9 @@ import (
 )
 
 type CError struct {
-	*sentry.EventID
-	Message string
-	Error   error
+	*sentry.EventID `json:"event_id"`
+	Message         string `json:"message"`
+	Error           error  `json:"-"`
 }
 
 func (base *Base) loadLogging() {

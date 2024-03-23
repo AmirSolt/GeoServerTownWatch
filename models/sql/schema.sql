@@ -38,7 +38,7 @@ CREATE INDEX event_point_idx ON events USING GIST ("point");
 CREATE TEMPORARY TABLE _temp_events (LIKE events INCLUDING ALL) ON COMMIT DROP;
 CREATE FUNCTION event_insert() RETURNS trigger AS $$
     BEGIN
-        NEW.point := ST_POINT(NEW.lat, NEW.long, 3857);
+        NEW.point := ST_POINT(NEW.long, NEW.lat, 3857);
         RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;
@@ -61,14 +61,15 @@ CREATE TABLE scans (
     long DOUBLE PRECISION NOT NULL
 );
 
+
 CREATE OR REPLACE FUNCTION scan_point(
-  lat DOUBLE PRECISION,
-  long DOUBLE PRECISION,
-  radius DOUBLE PRECISION,
-  region TEXT,
-  from_date TIMESTAMPTZ,
-  to_date TIMESTAMPTZ,
-  scan_events_count_limit INT
+  lat_param DOUBLE PRECISION,
+  long_param DOUBLE PRECISION,
+  radius_param DOUBLE PRECISION,
+  region_param TEXT,
+  from_date_param TIMESTAMPTZ,
+  to_date_param TIMESTAMPTZ,
+  scan_events_count_limit_param INT
 ) RETURNS SETOF events AS $$
 DECLARE
     scan_results CURSOR FOR
@@ -77,18 +78,18 @@ DECLARE
         WHERE  
             ST_DWithin(
                 point,
-                ST_Point(lat, long, 3857),
-                radius
+                ST_Point(lat_param, long_param, 3857),
+                radius_param
             )
-            AND region = region
-            AND occur_at >= from_date
-            AND occur_at <= to_date
+            AND region = region_param
+            AND occur_at >= from_date_param
+            AND occur_at <= to_date_param
         ORDER BY occur_at
-        LIMIT scan_events_count_limit;
+        LIMIT scan_events_count_limit_param;
 
     event_row events%ROWTYPE;
     scan_record scans%ROWTYPE;
-    events_found_count INT := 0;
+    events_count INT := 0;
 BEGIN
     -- Perform the scan and store the results in a temporary table
     CREATE TEMP TABLE temp_scan_results AS
@@ -97,32 +98,32 @@ BEGIN
         WHERE  
             ST_DWithin(
                 point,
-                ST_Point(lat, long, 3857),
-                radius
+                ST_Point(lat_param, long_param, 3857),
+                radius_param
             )
-            AND region = region
-            AND occur_at >= from_date
-            AND occur_at <= to_date
+            AND region = region_param
+            AND occur_at >= from_date_param
+            AND occur_at <= to_date_param
         ORDER BY occur_at
-        LIMIT scan_events_count_limit;
+        LIMIT scan_events_count_limit_param;
 
     -- Iterate over the results to count the events
     FOR event_row IN scan_results LOOP
-        events_found_count := events_found_count + 1;
+        events_count := events_count + 1;
     END LOOP;
 
     -- Record the completed scan
-    scan_record.radius := radius;
-    scan_record.from_date := from_date;
-    scan_record.to_date := to_date;
-    scan_record.events_found_count := events_found_count;
-    scan_record.region := region;
-    scan_record.point := ST_SetSRID(ST_MakePoint(long, lat), 3857);
-    scan_record.lat := lat;
-    scan_record.long := long;
+    scan_record.radius := radius_param;
+    scan_record.from_date := from_date_param;
+    scan_record.to_date := to_date_param;
+    scan_record.events_count := events_count;
+    scan_record.region := region_param;
+    scan_record.point := ST_SetSRID(ST_MakePoint(long_param, lat_param), 3857);
+    scan_record.lat := lat_param;
+    scan_record.long := long_param;
 
-    INSERT INTO scans (radius, from_date, to_date, events_found_count, region, point, lat, long)
-    VALUES (scan_record.radius, scan_record.from_date, scan_record.to_date, scan_record.events_found_count, scan_record.region, scan_record.point, scan_record.lat, scan_record.long);
+    INSERT INTO scans (radius, from_date, to_date, events_count, region, point, lat, long)
+    VALUES (scan_record.radius, scan_record.from_date, scan_record.to_date, scan_record.events_count, scan_record.region, scan_record.point, scan_record.lat, scan_record.long);
 
     -- Return the original scan results
     RETURN QUERY SELECT * FROM temp_scan_results;
@@ -149,7 +150,7 @@ CREATE TABLE areas (
 CREATE INDEX area_user_idx ON areas ("user_id");
 CREATE FUNCTION area_insert() RETURNS trigger AS $$
     BEGIN
-        NEW.point := ST_POINT(NEW.lat, NEW.long, 3857);
+        NEW.point := ST_POINT(NEW.long, NEW.lat, 3857);
         RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;

@@ -3,12 +3,24 @@ package events
 import (
 	"net/http"
 	"reflect"
+	"time"
 	"townwatch/base"
 	"townwatch/models"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type ScanPointAPIParams struct {
+	Lat                  float64 `json:"lat"`
+	Long                 float64 `json:"long"`
+	Radius               float64 `json:"radius"`
+	Region               string  `json:"region"`
+	FromDate             string  `json:"from_date"`
+	ToDate               string  `json:"to_date"`
+	ScanEventsCountLimit int32   `json:"scan_events_count_limit"`
+}
 
 func LoadRoutes(b *base.Base) {
 
@@ -19,7 +31,7 @@ func LoadRoutes(b *base.Base) {
 			censorEvents = false
 		}
 
-		var params *models.ScanPointParams
+		var params *ScanPointAPIParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
@@ -31,11 +43,22 @@ func LoadRoutes(b *base.Base) {
 			return
 		}
 
+		// =========================
+		// validate and convert
+
 		if params.ScanEventsCountLimit > int32(b.ScanEventCountLimit) {
 			params.ScanEventsCountLimit = int32(b.ScanEventCountLimit)
 		}
 
-		eventsRaw, err := b.Queries.ScanPoint(ctx, *params)
+		dbParams, errCon := ConvertParams(*params)
+		if errCon != nil {
+			ctx.JSON(http.StatusInternalServerError, errCon)
+			return
+		}
+
+		// =========================
+
+		eventsRaw, err := b.Queries.ScanPoint(ctx, *dbParams)
 		if err != nil {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
@@ -43,7 +66,7 @@ func LoadRoutes(b *base.Base) {
 				Message: "Internal Server Error",
 				Error:   err,
 			}
-			ctx.JSON(http.StatusInternalServerError, cerr)
+			ctx.JSON(http.StatusInternalServerError, *cerr)
 			return
 		}
 
@@ -85,4 +108,44 @@ func CensorEvent(event models.Event) models.Event {
 		}
 	}
 	return event
+}
+
+func ConvertParams(apiParams ScanPointAPIParams) (*models.ScanPointParams, *base.CError) {
+	scanParams := models.ScanPointParams{}
+
+	apiFields := reflect.ValueOf(&apiParams).Elem()
+	scanFields := reflect.ValueOf(&scanParams).Elem()
+
+	for i := 0; i < apiFields.NumField(); i++ {
+		apiField := apiFields.Field(i)
+		scanField := scanFields.Field(i)
+
+		if scanField.Type() == reflect.TypeOf(pgtype.Timestamptz{}) {
+			// ================
+			// Convert time from string
+			layout := "Mon, 02 Jan 2006 15:04:05 GMT"
+			convDate, err := time.Parse(layout, apiField.Interface().(string))
+			if err != nil {
+				eventID := sentry.CaptureException(err)
+				cerr := &base.CError{
+					EventID: eventID,
+					Message: "Internal Server Error",
+					Error:   err,
+				}
+				return nil, cerr
+			}
+			pgTimestamp := pgtype.Timestamptz{
+				Time:  convDate,
+				Valid: true,
+			}
+			scanField.Set(reflect.ValueOf(&pgTimestamp).Elem())
+			continue
+			// =================
+		} else {
+			scanField.Set(apiField)
+		}
+
+	}
+
+	return &scanParams, nil
 }

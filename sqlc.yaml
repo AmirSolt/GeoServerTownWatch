@@ -23,3 +23,11 @@ sql:
                 go_type: 
                   type: "string"
                   pointer: true
+              - column: "_temp_events.point"
+                go_type: 
+                  type: "string"
+                  pointer: true
+              - column: "scans.point"
+                go_type: 
+                  type: "string"
+                  pointer: true

@@ -110,7 +110,7 @@ type Scan struct {
 	ToDate      pgtype.Timestamptz `json:"to_date"`
 	EventsCount int32              `json:"events_count"`
 	Region      string             `json:"region"`
-	Point       interface{}        `json:"point"`
+	Point       *string            `json:"point"`
 	Lat         float64            `json:"lat"`
 	Long        float64            `json:"long"`
 }
@@ -124,7 +124,7 @@ type TempEvent struct {
 	LocationType pgtype.Text        `json:"location_type"`
 	CrimeType    CrimeType          `json:"crime_type"`
 	Region       string             `json:"region"`
-	Point        interface{}        `json:"point"`
+	Point        *string            `json:"point"`
 	Lat          float64            `json:"lat"`
 	Long         float64            `json:"long"`
 }

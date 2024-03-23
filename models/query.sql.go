@@ -339,26 +339,26 @@ SELECT scan_point($1, $2, $3, $4, $5, $6, $7)
 `
 
 type ScanPointParams struct {
-	Lat                  float64            `json:"lat"`
-	Long                 float64            `json:"long"`
-	Radius               float64            `json:"radius"`
-	Region               string             `json:"region"`
-	FromDate             pgtype.Timestamptz `json:"from_date"`
-	ToDate               pgtype.Timestamptz `json:"to_date"`
-	ScanEventsCountLimit int32              `json:"scan_events_count_limit"`
+	LatParam                  float64            `json:"lat_param"`
+	LongParam                 float64            `json:"long_param"`
+	RadiusParam               float64            `json:"radius_param"`
+	RegionParam               string             `json:"region_param"`
+	FromDateParam             pgtype.Timestamptz `json:"from_date_param"`
+	ToDateParam               pgtype.Timestamptz `json:"to_date_param"`
+	ScanEventsCountLimitParam int32              `json:"scan_events_count_limit_param"`
 }
 
 // =========================================
 // custom functions
 func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]interface{}, error) {
 	rows, err := q.db.Query(ctx, scanPoint,
-		arg.Lat,
-		arg.Long,
-		arg.Radius,
-		arg.Region,
-		arg.FromDate,
-		arg.ToDate,
-		arg.ScanEventsCountLimit,
+		arg.LatParam,
+		arg.LongParam,
+		arg.RadiusParam,
+		arg.RegionParam,
+		arg.FromDateParam,
+		arg.ToDateParam,
+		arg.ScanEventsCountLimitParam,
 	)
 	if err != nil {
 		return nil, err

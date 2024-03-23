@@ -6,7 +6,7 @@ type Config struct {
 
 func (b *Base) loadConfig() {
 	config := Config{
-		ScanEventCountLimit: 50,
+		ScanEventCountLimit: 100,
 	}
 
 	b.Config = &config
