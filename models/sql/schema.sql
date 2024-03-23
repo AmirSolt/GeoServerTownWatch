@@ -54,7 +54,7 @@ CREATE TABLE scans (
     to_date TIMESTAMPTZ NOT NULL,
 
     events_count INT NOT NULL,
-
+    address TEXT NOT NULL,
     region TEXT NOT NULL,
     point geometry(Point, 3857),
     lat DOUBLE PRECISION NOT NULL,
@@ -62,77 +62,6 @@ CREATE TABLE scans (
 );
 
 
-CREATE OR REPLACE FUNCTION scan_point(
-  lat_param DOUBLE PRECISION,
-  long_param DOUBLE PRECISION,
-  radius_param DOUBLE PRECISION,
-  region_param TEXT,
-  from_date_param TIMESTAMPTZ,
-  to_date_param TIMESTAMPTZ,
-  scan_events_count_limit_param INT
-) RETURNS SETOF events AS $$
-DECLARE
-    scan_results CURSOR FOR
-        SELECT *
-        FROM events
-        WHERE  
-            ST_DWithin(
-                point,
-                ST_Point(lat_param, long_param, 3857),
-                radius_param
-            )
-            AND region = region_param
-            AND occur_at >= from_date_param
-            AND occur_at <= to_date_param
-        ORDER BY occur_at
-        LIMIT scan_events_count_limit_param;
-
-    event_row events%ROWTYPE;
-    scan_record scans%ROWTYPE;
-    events_count INT := 0;
-BEGIN
-    -- Perform the scan and store the results in a temporary table
-    CREATE TEMP TABLE temp_scan_results AS
-        SELECT *
-        FROM events
-        WHERE  
-            ST_DWithin(
-                point,
-                ST_Point(lat_param, long_param, 3857),
-                radius_param
-            )
-            AND region = region_param
-            AND occur_at >= from_date_param
-            AND occur_at <= to_date_param
-        ORDER BY occur_at
-        LIMIT scan_events_count_limit_param;
-
-    -- Iterate over the results to count the events
-    FOR event_row IN scan_results LOOP
-        events_count := events_count + 1;
-    END LOOP;
-
-    -- Record the completed scan
-    scan_record.radius := radius_param;
-    scan_record.from_date := from_date_param;
-    scan_record.to_date := to_date_param;
-    scan_record.events_count := events_count;
-    scan_record.region := region_param;
-    scan_record.point := ST_SetSRID(ST_MakePoint(long_param, lat_param), 3857);
-    scan_record.lat := lat_param;
-    scan_record.long := long_param;
-
-    INSERT INTO scans (radius, from_date, to_date, events_count, region, point, lat, long)
-    VALUES (scan_record.radius, scan_record.from_date, scan_record.to_date, scan_record.events_count, scan_record.region, scan_record.point, scan_record.lat, scan_record.long);
-
-    -- Return the original scan results
-    RETURN QUERY SELECT * FROM temp_scan_results;
-
-    DROP TABLE IF EXISTS temp_scan_results;
-
-    RETURN;
-END;
-$$ LANGUAGE plpgsql;
 -- ======
 
 CREATE TABLE areas (

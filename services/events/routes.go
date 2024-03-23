@@ -20,6 +20,7 @@ type ScanPointAPIParams struct {
 	FromDate             string  `json:"from_date"`
 	ToDate               string  `json:"to_date"`
 	ScanEventsCountLimit int32   `json:"scan_events_count_limit"`
+	Address              string  `json:"address"`
 }
 
 func LoadRoutes(b *base.Base) {
@@ -58,7 +59,7 @@ func LoadRoutes(b *base.Base) {
 
 		// =========================
 
-		eventsRaw, err := b.Queries.ScanPoint(ctx, *dbParams)
+		events, err := b.Queries.ScanPoint(ctx, *dbParams)
 		if err != nil {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
@@ -66,16 +67,23 @@ func LoadRoutes(b *base.Base) {
 				Message: "Internal Server Error",
 				Error:   err,
 			}
-			ctx.JSON(http.StatusInternalServerError, *cerr)
+			ctx.JSON(http.StatusInternalServerError, cerr)
 			return
 		}
 
-		// convert to Report
-		events, errconv := base.ConvertArrayInterface[models.Event](eventsRaw)
-		if errconv != nil {
-			ctx.JSON(http.StatusInternalServerError, errconv)
-			return
-		}
+		// Create a scan for record
+		go func() {
+			CreateScan(b, ctx, &models.CreateScanParams{
+				Radius:      dbParams.Radius,
+				FromDate:    dbParams.FromDate,
+				ToDate:      dbParams.ToDate,
+				EventsCount: int32(len(events)),
+				Address:     params.Address,
+				Region:      dbParams.Region,
+				Lat:         dbParams.Lat,
+				Long:        dbParams.Long,
+			})
+		}()
 
 		var cenEvents []models.Event
 		if censorEvents {
@@ -85,6 +93,20 @@ func LoadRoutes(b *base.Base) {
 		ctx.JSON(http.StatusOK, cenEvents)
 	})
 
+}
+
+func CreateScan(b *base.Base, ctx *gin.Context, params *models.CreateScanParams) (*models.Scan, *base.CError) {
+	scan, err := b.DB.Queries.CreateScan(ctx, *params)
+	if err != nil {
+		eventID := sentry.CaptureException(err)
+		return nil, &base.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+	}
+
+	return &scan, nil
 }
 
 func CensorEvents(events []models.Event) []models.Event {
@@ -116,7 +138,7 @@ func ConvertParams(apiParams ScanPointAPIParams) (*models.ScanPointParams, *base
 	apiFields := reflect.ValueOf(&apiParams).Elem()
 	scanFields := reflect.ValueOf(&scanParams).Elem()
 
-	for i := 0; i < apiFields.NumField(); i++ {
+	for i := 0; i < scanFields.NumField(); i++ {
 		apiField := apiFields.Field(i)
 		scanField := scanFields.Field(i)
 

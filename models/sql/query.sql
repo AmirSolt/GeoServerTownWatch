@@ -3,8 +3,10 @@
 -- =========================================
 -- events
 
+
 -- name: CreateTempEventsTable :exec
 CREATE TEMPORARY TABLE _temp_events (LIKE events INCLUDING ALL) ON COMMIT DROP;
+
 
 -- name: CreateTempEvents :copyfrom
 INSERT INTO _temp_events (
@@ -46,6 +48,10 @@ SELECT count(*) FROM events;
 
 -- name: CountTempEvents :one
 SELECT count(*) FROM _temp_events;
+
+-- name: CreateScan :one
+INSERT INTO scans (radius, from_date, to_date, events_count, address, region, lat, long) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *;
+
 
 -- =========================================
 --  areas
@@ -96,8 +102,6 @@ WHERE r.id = $1;
 -- =========================================
 -- custom functions
 
--- name: ScanPoint :many
-SELECT scan_point($1, $2, $3, $4, $5, $6, $7);
 
 -- name: CreateGlobalReports :many
 SELECT create_global_reports($1, $2, $3);

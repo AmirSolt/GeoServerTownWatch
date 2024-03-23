@@ -109,6 +109,7 @@ type Scan struct {
 	FromDate    pgtype.Timestamptz `json:"from_date"`
 	ToDate      pgtype.Timestamptz `json:"to_date"`
 	EventsCount int32              `json:"events_count"`
+	Address     string             `json:"address"`
 	Region      string             `json:"region"`
 	Point       *string            `json:"point"`
 	Lat         float64            `json:"lat"`

@@ -72,6 +72,8 @@ func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) (Area, e
 }
 
 const createGlobalReports = `-- name: CreateGlobalReports :many
+
+
 SELECT create_global_reports($1, $2, $3)
 `
 
@@ -81,6 +83,8 @@ type CreateGlobalReportsParams struct {
 	ScanEventsCountLimit int32              `json:"scan_events_count_limit"`
 }
 
+// =========================================
+// custom functions
 func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalReportsParams) ([]interface{}, error) {
 	rows, err := q.db.Query(ctx, createGlobalReports, arg.FromDate, arg.ToDate, arg.ScanEventsCountLimit)
 	if err != nil {
@@ -101,6 +105,49 @@ func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalRepor
 	return items, nil
 }
 
+const createScan = `-- name: CreateScan :one
+INSERT INTO scans (radius, from_date, to_date, events_count, address, region, lat, long) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, created_at, radius, from_date, to_date, events_count, address, region, point, lat, long
+`
+
+type CreateScanParams struct {
+	Radius      float64            `json:"radius"`
+	FromDate    pgtype.Timestamptz `json:"from_date"`
+	ToDate      pgtype.Timestamptz `json:"to_date"`
+	EventsCount int32              `json:"events_count"`
+	Address     string             `json:"address"`
+	Region      string             `json:"region"`
+	Lat         float64            `json:"lat"`
+	Long        float64            `json:"long"`
+}
+
+func (q *Queries) CreateScan(ctx context.Context, arg CreateScanParams) (Scan, error) {
+	row := q.db.QueryRow(ctx, createScan,
+		arg.Radius,
+		arg.FromDate,
+		arg.ToDate,
+		arg.EventsCount,
+		arg.Address,
+		arg.Region,
+		arg.Lat,
+		arg.Long,
+	)
+	var i Scan
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.Radius,
+		&i.FromDate,
+		&i.ToDate,
+		&i.EventsCount,
+		&i.Address,
+		&i.Region,
+		&i.Point,
+		&i.Lat,
+		&i.Long,
+	)
+	return i, err
+}
+
 type CreateTempEventsParams struct {
 	OccurAt      pgtype.Timestamptz `json:"occur_at"`
 	ExternalID   string             `json:"external_id"`
@@ -113,6 +160,7 @@ type CreateTempEventsParams struct {
 }
 
 const createTempEventsTable = `-- name: CreateTempEventsTable :exec
+
 
 CREATE TEMPORARY TABLE _temp_events (LIKE events INCLUDING ALL) ON COMMIT DROP
 `
@@ -331,51 +379,6 @@ ON CONFLICT (external_id) DO NOTHING
 func (q *Queries) MoveFromTempEventsToEvents(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, moveFromTempEventsToEvents)
 	return err
-}
-
-const scanPoint = `-- name: ScanPoint :many
-
-SELECT scan_point($1, $2, $3, $4, $5, $6, $7)
-`
-
-type ScanPointParams struct {
-	LatParam                  float64            `json:"lat_param"`
-	LongParam                 float64            `json:"long_param"`
-	RadiusParam               float64            `json:"radius_param"`
-	RegionParam               string             `json:"region_param"`
-	FromDateParam             pgtype.Timestamptz `json:"from_date_param"`
-	ToDateParam               pgtype.Timestamptz `json:"to_date_param"`
-	ScanEventsCountLimitParam int32              `json:"scan_events_count_limit_param"`
-}
-
-// =========================================
-// custom functions
-func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]interface{}, error) {
-	rows, err := q.db.Query(ctx, scanPoint,
-		arg.LatParam,
-		arg.LongParam,
-		arg.RadiusParam,
-		arg.RegionParam,
-		arg.FromDateParam,
-		arg.ToDateParam,
-		arg.ScanEventsCountLimitParam,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []interface{}
-	for rows.Next() {
-		var scan_point interface{}
-		if err := rows.Scan(&scan_point); err != nil {
-			return nil, err
-		}
-		items = append(items, scan_point)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const updateArea = `-- name: UpdateArea :one
