@@ -121,7 +121,8 @@ func storeEvents(b *base.Base, ctx context.Context, eventParams *[]models.Create
 func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*ArcgisResponse, *base.CError) {
 	toDateStr := fmt.Sprintf("AND OCC_DATE_AGOL <= date '%s'", convertToArcgisQueryTime(toDate))
 	where := fmt.Sprintf("OCC_DATE_AGOL >= date '%s' %s", convertToArcgisQueryTime(fromDate), toDateStr)
-	endpoint := fmt.Sprintf("%s?where=%s&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&resultType=none&distance=0.0&units=esriSRUnit_Meter&relationParam=&returnGeodetic=false&outFields=*&returnGeometry=true&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&defaultSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=none&f=pjson&token=", b.Env.ARCGIS_TORONTO_URL, url.QueryEscape(where))
+	sr := "4326"
+	endpoint := fmt.Sprintf("%s?where=%s&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=%s&spatialRel=esriSpatialRelIntersects&resultType=none&distance=0.0&units=esriSRUnit_Meter&relationParam=&returnGeodetic=false&outFields=*&returnGeometry=true&featureEncoding=esriDefault&multipatchOption=xyFootprint&maxAllowableOffset=&geometryPrecision=&outSR=&defaultSR=&datumTransformation=&applyVCSProjection=false&returnIdsOnly=false&returnUniqueIdsOnly=false&returnCountOnly=false&returnExtentOnly=false&returnQueryGeometry=false&returnDistinctValues=false&cacheHint=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&having=&resultOffset=&resultRecordCount=&returnZ=false&returnM=false&returnExceededLimitFeatures=true&quantizationParameters=&sqlFormat=none&f=pjson&token=", b.Env.ARCGIS_TORONTO_URL, url.QueryEscape(where), sr)
 	resp, err := http.Get(endpoint)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
@@ -164,6 +165,10 @@ func convertArcgisTorontoResponseToEventParams(arcgisResponse *ArcgisResponse) *
 	reportsParams := []models.CreateTempEventsParams{}
 
 	for _, arcReport := range arcgisResponse.Features {
+		if arcReport.Attributes.LatWgs84 == 0 || arcReport.Attributes.LongWgs84 == 0 {
+			continue
+		}
+
 		secs := int64(arcReport.Attributes.OccDateAgol/1000.0) + int64(arcReport.Attributes.Hour*60*60)
 		reportsParams = append(reportsParams, models.CreateTempEventsParams{
 			OccurAt:      pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
@@ -172,8 +177,8 @@ func convertArcgisTorontoResponseToEventParams(arcgisResponse *ArcgisResponse) *
 			LocationType: pgtype.Text{String: arcReport.Attributes.LocationCategory, Valid: true},
 			CrimeType:    models.CrimeType(arcReport.Attributes.CrimeType),
 			Region:       string(TorontoRegion),
-			Lat:          arcReport.Geometry.X,
-			Long:         arcReport.Geometry.Y,
+			Lat:          arcReport.Attributes.LatWgs84,
+			Long:         arcReport.Attributes.LongWgs84,
 		})
 	}
 
@@ -243,7 +248,7 @@ func removeNeighExtraChars(inputString string) string {
 // 				${raw["attributes"]["LOCATION_CATEGORY"]},
 // 				${crimeTypeCleaning(raw["attributes"]["CRIME_TYPE"]) as CrimeType},
 // 				${region},
-// 				ST_Point(${raw["geometry"]["x"]}, ${raw["geometry"]["y"]}, 3857),
+// 				ST_Point(${raw["geometry"]["x"]}, ${raw["geometry"]["y"]}, 4326),
 // 				${raw["geometry"]["x"]},
 // 				${raw["geometry"]["y"]}
 // 			)

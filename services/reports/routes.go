@@ -29,7 +29,7 @@ func LoadRoutes(b *base.Base) {
 			ctx.JSON(http.StatusInternalServerError, cerr)
 			return
 		}
-		report, err := ReadPrivateReport(b, ctx, params, censorEvents)
+		report, err := ReadReport(b, ctx, params, censorEvents)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err)
 			return

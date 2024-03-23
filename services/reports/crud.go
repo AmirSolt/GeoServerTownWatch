@@ -15,7 +15,7 @@ type ReportDetailsResponse struct {
 	Events        *[]models.Event
 }
 
-func ReadPrivateReport(b *base.Base, ctx *gin.Context, params *models.GetReportDetailsParams, censorEvents bool) (*ReportDetailsResponse, *base.CError) {
+func ReadReport(b *base.Base, ctx *gin.Context, params *models.GetReportDetailsParams, censorEvents bool) (*ReportDetailsResponse, *base.CError) {
 	reportDetails, err := b.DB.Queries.GetReportDetails(ctx, *params)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
@@ -25,7 +25,7 @@ func ReadPrivateReport(b *base.Base, ctx *gin.Context, params *models.GetReportD
 			Error:   err,
 		}
 	}
-	eventsObj, err := b.DB.Queries.GetEventsByReport(ctx, params.ID)
+	eventsO, err := b.DB.Queries.GetEventsByReport(ctx, params.ID)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
 		return nil, &base.CError{
@@ -36,9 +36,9 @@ func ReadPrivateReport(b *base.Base, ctx *gin.Context, params *models.GetReportD
 	}
 
 	reportDetails.Area = areas.CensorArea(reportDetails.Area)
-	var cenEvents []models.Event
+	cenEvents := eventsO
 	if censorEvents {
-		cenEvents = events.CensorEvents(eventsObj)
+		cenEvents = events.CensorEvents(eventsO)
 	}
 	return &ReportDetailsResponse{
 		ReportDetails: &reportDetails,

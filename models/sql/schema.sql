@@ -29,7 +29,7 @@ CREATE TABLE events (
     location_type TEXT,
     crime_type crime_type NOT NULL,
     region TEXT NOT NULL,
-    point geometry(Point, 3857),
+    point geometry(Point, 4326),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
 );
@@ -38,7 +38,7 @@ CREATE INDEX event_point_idx ON events USING GIST ("point");
 CREATE TEMPORARY TABLE _temp_events (LIKE events INCLUDING ALL) ON COMMIT DROP;
 CREATE FUNCTION event_insert() RETURNS trigger AS $$
     BEGIN
-        NEW.point := ST_POINT(NEW.long, NEW.lat, 3857);
+        NEW.point := ST_POINT(NEW.long, NEW.lat, 4326);
         RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;
@@ -56,7 +56,7 @@ CREATE TABLE scans (
     events_count INT NOT NULL,
     address TEXT NOT NULL,
     region TEXT NOT NULL,
-    point geometry(Point, 3857),
+    point geometry(Point, 4326),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
 );
@@ -72,14 +72,14 @@ CREATE TABLE areas (
     address TEXT NOT NULL,
     region TEXT NOT NULL,
     radius DOUBLE PRECISION NOT NULL,
-    point geometry(Point, 3857),
+    point geometry(Point, 4326),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
 );
 CREATE INDEX area_user_idx ON areas ("user_id");
 CREATE FUNCTION area_insert() RETURNS trigger AS $$
     BEGIN
-        NEW.point := ST_POINT(NEW.long, NEW.lat, 3857);
+        NEW.point := ST_POINT(NEW.long, NEW.lat, 4326);
         RETURN NEW;
     END;
 $$ LANGUAGE plpgsql;

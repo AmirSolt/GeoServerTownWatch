@@ -85,7 +85,7 @@ func LoadRoutes(b *base.Base) {
 			})
 		}()
 
-		var cenEvents []models.Event
+		cenEvents := events
 		if censorEvents {
 			cenEvents = CensorEvents(events)
 		}

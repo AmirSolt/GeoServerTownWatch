@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -12,7 +13,7 @@ FROM events
 WHERE 
 ST_DWithin(
     point,
-    ST_Point($1, $2, 3857),
+    ST_Point($1, $2, 4326),
     $3
 )
 AND region = $4
@@ -64,6 +65,11 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, 
 		); err != nil {
 			return nil, err
 		}
+
+		fmt.Println("==================")
+		fmt.Println("i:", i)
+		fmt.Println("==================")
+
 		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
