@@ -1,6 +1,7 @@
 package events
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"time"
@@ -13,14 +14,14 @@ import (
 )
 
 type ScanPointAPIParams struct {
-	Lat                  float64 `json:"lat"`
-	Long                 float64 `json:"long"`
-	Radius               float64 `json:"radius"`
-	Region               string  `json:"region"`
-	FromDate             string  `json:"from_date"`
-	ToDate               string  `json:"to_date"`
-	ScanEventsCountLimit int32   `json:"scan_events_count_limit"`
-	Address              string  `json:"address"`
+	Lat      float64 `json:"lat"`
+	Long     float64 `json:"long"`
+	Radius   float64 `json:"radius"`
+	Region   string  `json:"region"`
+	FromDate string  `json:"from_date"`
+	ToDate   string  `json:"to_date"`
+	Limit    int32   `json:"limit"`
+	Address  string  `json:"address"`
 }
 
 func LoadRoutes(b *base.Base) {
@@ -47,8 +48,8 @@ func LoadRoutes(b *base.Base) {
 		// =========================
 		// validate and convert
 
-		if params.ScanEventsCountLimit > int32(b.ScanEventCountLimit) {
-			params.ScanEventsCountLimit = int32(b.ScanEventCountLimit)
+		if params.Limit > int32(b.ScanEventCountLimit) {
+			params.Limit = int32(b.ScanEventCountLimit)
 		}
 
 		dbParams, errCon := ConvertParams(*params)
@@ -58,6 +59,10 @@ func LoadRoutes(b *base.Base) {
 		}
 
 		// =========================
+
+		fmt.Println("====================")
+		fmt.Println("dbParams", *dbParams)
+		fmt.Println("====================")
 
 		events, err := b.Queries.ScanPoint(ctx, *dbParams)
 		if err != nil {
@@ -133,41 +138,44 @@ func CensorEvent(event models.Event) models.Event {
 }
 
 func ConvertParams(apiParams ScanPointAPIParams) (*models.ScanPointParams, *base.CError) {
-	scanParams := models.ScanPointParams{}
 
-	apiFields := reflect.ValueOf(&apiParams).Elem()
-	scanFields := reflect.ValueOf(&scanParams).Elem()
+	fromDate, cerr := convertStrToTime(apiParams.FromDate)
+	if cerr != nil {
+		return nil, cerr
+	}
+	toDate, ferr := convertStrToTime(apiParams.ToDate)
+	if ferr != nil {
+		return nil, ferr
+	}
 
-	for i := 0; i < scanFields.NumField(); i++ {
-		apiField := apiFields.Field(i)
-		scanField := scanFields.Field(i)
-
-		if scanField.Type() == reflect.TypeOf(pgtype.Timestamptz{}) {
-			// ================
-			// Convert time from string
-			layout := "Mon, 02 Jan 2006 15:04:05 GMT"
-			convDate, err := time.Parse(layout, apiField.Interface().(string))
-			if err != nil {
-				eventID := sentry.CaptureException(err)
-				cerr := &base.CError{
-					EventID: eventID,
-					Message: "Internal Server Error",
-					Error:   err,
-				}
-				return nil, cerr
-			}
-			pgTimestamp := pgtype.Timestamptz{
-				Time:  convDate,
-				Valid: true,
-			}
-			scanField.Set(reflect.ValueOf(&pgTimestamp).Elem())
-			continue
-			// =================
-		} else {
-			scanField.Set(apiField)
-		}
-
+	scanParams := models.ScanPointParams{
+		Lat:      apiParams.Lat,
+		Long:     apiParams.Long,
+		Radius:   apiParams.Radius,
+		Region:   apiParams.Region,
+		FromDate: *fromDate,
+		ToDate:   *toDate,
+		Limit:    apiParams.Limit,
 	}
 
 	return &scanParams, nil
+}
+
+func convertStrToTime(timeStr string) (*pgtype.Timestamptz, *base.CError) {
+	layout := "Mon, 02 Jan 2006 15:04:05 GMT"
+	convDate, err := time.Parse(layout, timeStr)
+	if err != nil {
+		eventID := sentry.CaptureException(err)
+		cerr := &base.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+		return nil, cerr
+	}
+	pgTimestamp := pgtype.Timestamptz{
+		Time:  convDate,
+		Valid: true,
+	}
+	return &pgTimestamp, nil
 }

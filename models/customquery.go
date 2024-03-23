@@ -2,26 +2,27 @@ package models
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const scanPoint = `-- name: scanPointTest :many
+const scanPoint = `-- name: scanPoint :many
 SELECT id, created_at, occur_at, external_id, neighborhood, location_type, crime_type, region, point, lat, long
 FROM events
 WHERE 
 ST_DWithin(
-    point,
-    ST_Point($1, $2, 4326),
-    $3
+    point::geography,
+    ST_Point($1, $2, 4326)::geography,
+    $3,
+	true
 )
-AND region = $4
-AND occur_at >= $5
-AND occur_at <= $6
-ORDER BY occur_at
-LIMIT $7
 `
+
+// AND region = $4
+// AND occur_at >= $5
+// AND occur_at <= $6
+// ORDER BY occur_at
+// LIMIT $7
 
 type ScanPointParams struct {
 	Lat      float64            `json:"lat"`
@@ -38,10 +39,10 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, 
 		arg.Lat,
 		arg.Long,
 		arg.Radius,
-		arg.Region,
-		arg.FromDate,
-		arg.ToDate,
-		arg.Limit,
+		// arg.Region,
+		// arg.FromDate,
+		// arg.ToDate,
+		// arg.Limit,
 	)
 	if err != nil {
 		return nil, err
@@ -65,10 +66,6 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, 
 		); err != nil {
 			return nil, err
 		}
-
-		fmt.Println("==================")
-		fmt.Println("i:", i)
-		fmt.Println("==================")
 
 		items = append(items, i)
 	}
