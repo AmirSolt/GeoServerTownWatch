@@ -16,13 +16,12 @@ ST_DWithin(
     $3,
 	true
 )
+AND region = $4
+AND occur_at >= $5
+AND occur_at <= $6
+ORDER BY occur_at
+LIMIT $7
 `
-
-// AND region = $4
-// AND occur_at >= $5
-// AND occur_at <= $6
-// ORDER BY occur_at
-// LIMIT $7
 
 type ScanPointParams struct {
 	Lat      float64            `json:"lat"`
@@ -36,13 +35,13 @@ type ScanPointParams struct {
 
 func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, error) {
 	rows, err := q.db.Query(ctx, scanPoint,
-		arg.Lat,
 		arg.Long,
+		arg.Lat,
 		arg.Radius,
-		// arg.Region,
-		// arg.FromDate,
-		// arg.ToDate,
-		// arg.Limit,
+		arg.Region,
+		arg.FromDate,
+		arg.ToDate,
+		arg.Limit,
 	)
 	if err != nil {
 		return nil, err
