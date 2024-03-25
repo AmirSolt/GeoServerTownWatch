@@ -16,11 +16,10 @@ ST_DWithin(
     $3,
 	true
 )
-AND region = $4
-AND occur_at >= $5
-AND occur_at <= $6
+AND occur_at >= $4
+AND occur_at <= $5
 ORDER BY occur_at
-LIMIT $7
+LIMIT $6
 `
 
 type ScanPointParams struct {
@@ -38,7 +37,6 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, 
 		arg.Long,
 		arg.Lat,
 		arg.Radius,
-		arg.Region,
 		arg.FromDate,
 		arg.ToDate,
 		arg.Limit,

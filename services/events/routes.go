@@ -76,6 +76,10 @@ func LoadRoutes(b *base.Base) {
 			return
 		}
 
+		fmt.Println("====================")
+		fmt.Println("events response", len(events))
+		fmt.Println("====================")
+
 		// Create a scan for record
 		go func() {
 			CreateScan(b, ctx, &models.CreateScanParams{
@@ -94,6 +98,10 @@ func LoadRoutes(b *base.Base) {
 		if censorEvents {
 			cenEvents = CensorEvents(events)
 		}
+
+		fmt.Println("====================")
+		fmt.Println("cenEvents response", len(cenEvents))
+		fmt.Println("====================")
 
 		ctx.JSON(http.StatusOK, cenEvents)
 	})
@@ -129,7 +137,7 @@ func CensorEvent(event models.Event) models.Event {
 	eventValue := reflect.ValueOf(&event).Elem()
 	for i := 0; i < eventType.NumField(); i++ {
 		fieldName := eventType.Field(i).Name
-		if uncensoredFields[fieldName] {
+		if !uncensoredFields[fieldName] {
 			field := eventValue.FieldByName(fieldName)
 			field.Set(reflect.Zero(field.Type()))
 		}
