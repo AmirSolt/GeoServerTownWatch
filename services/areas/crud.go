@@ -70,7 +70,7 @@ func DeleteArea(b *base.Base, ctx *gin.Context, params *models.DeleteAreaParams)
 }
 
 type GetAreasByUserParams struct {
-	UserID string `json="user_id"`
+	UserID string `json:"user_id"`
 }
 
 func ReadAreasByUser(b *base.Base, ctx *gin.Context, params *GetAreasByUserParams) (*[]models.Area, *base.CError) {
