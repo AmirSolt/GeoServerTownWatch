@@ -1,6 +1,7 @@
 package areas
 
 import (
+	"fmt"
 	"net/http"
 	"townwatch/base"
 	"townwatch/models"
@@ -12,12 +13,37 @@ import (
 func LoadRoutes(b *base.Base) {
 
 	b.Engine.POST("/api/areas/create", func(ctx *gin.Context) {
+
 		var params *models.CreateAreaParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
 			cerr := &base.CError{
 				EventID: eventID,
 				Message: "Internal Server Error",
+				Error:   err,
+			}
+			ctx.JSON(http.StatusInternalServerError, cerr)
+			return
+		}
+
+		count, errc := b.Queries.CountAreasByUser(ctx, params.UserID)
+		if errc != nil {
+			eventID := sentry.CaptureException(errc)
+			cerr := &base.CError{
+				EventID: eventID,
+				Message: "Internal Server Error",
+				Error:   errc,
+			}
+			ctx.JSON(http.StatusInternalServerError, cerr)
+			return
+		}
+
+		if count >= int64(b.MaxAreasByUser) {
+			err := fmt.Errorf("user has reached maximum area count")
+			eventID := sentry.CaptureException(err)
+			cerr := &base.CError{
+				EventID: eventID,
+				Message: "you have reached maximum area count",
 				Error:   err,
 			}
 			ctx.JSON(http.StatusInternalServerError, cerr)

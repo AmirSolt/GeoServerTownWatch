@@ -11,6 +11,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAreasByUser = `-- name: CountAreasByUser :one
+
+SELECT count(*) FROM areas
+WHERE user_id = $1
+`
+
+// =========================================
+//
+//	areas
+func (q *Queries) CountAreasByUser(ctx context.Context, userID string) (int64, error) {
+	row := q.db.QueryRow(ctx, countAreasByUser, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countEvents = `-- name: CountEvents :one
 SELECT count(*) FROM events
 `
@@ -34,14 +50,13 @@ func (q *Queries) CountTempEvents(ctx context.Context) (int64, error) {
 }
 
 const createArea = `-- name: CreateArea :one
-INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, created_at, user_id, is_active, address, region, radius, point, lat, long
+INSERT INTO areas (user_id, address, radius, lat, long) VALUES ($1,$2,$3,$4,$5) RETURNING id, created_at, user_id, is_active, address, radius, point, lat, long
 `
 
 type CreateAreaParams struct {
 	UserID  string  `json:"user_id"`
 	Address string  `json:"address"`
-	Region  string  `json:"region"`
-	Radius  float64 `json:"radius"`
+	Radius  int32   `json:"radius"`
 	Lat     float64 `json:"lat"`
 	Long    float64 `json:"long"`
 }
@@ -50,7 +65,6 @@ func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) (Area, e
 	row := q.db.QueryRow(ctx, createArea,
 		arg.UserID,
 		arg.Address,
-		arg.Region,
 		arg.Radius,
 		arg.Lat,
 		arg.Long,
@@ -62,7 +76,6 @@ func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) (Area, e
 		&i.UserID,
 		&i.IsActive,
 		&i.Address,
-		&i.Region,
 		&i.Radius,
 		&i.Point,
 		&i.Lat,
@@ -106,16 +119,16 @@ func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalRepor
 }
 
 const createScan = `-- name: CreateScan :one
-INSERT INTO scans (radius, from_date, to_date, events_count, address, region, lat, long) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, created_at, radius, from_date, to_date, events_count, address, region, point, lat, long
+INSERT INTO scans (radius, from_date, to_date, events_count, address, user_id, lat, long) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, created_at, radius, from_date, to_date, user_id, events_count, address, point, lat, long
 `
 
 type CreateScanParams struct {
-	Radius      float64            `json:"radius"`
+	Radius      int32              `json:"radius"`
 	FromDate    pgtype.Timestamptz `json:"from_date"`
 	ToDate      pgtype.Timestamptz `json:"to_date"`
 	EventsCount int32              `json:"events_count"`
 	Address     string             `json:"address"`
-	Region      string             `json:"region"`
+	UserID      pgtype.Text        `json:"user_id"`
 	Lat         float64            `json:"lat"`
 	Long        float64            `json:"long"`
 }
@@ -127,7 +140,7 @@ func (q *Queries) CreateScan(ctx context.Context, arg CreateScanParams) (Scan, e
 		arg.ToDate,
 		arg.EventsCount,
 		arg.Address,
-		arg.Region,
+		arg.UserID,
 		arg.Lat,
 		arg.Long,
 	)
@@ -138,9 +151,9 @@ func (q *Queries) CreateScan(ctx context.Context, arg CreateScanParams) (Scan, e
 		&i.Radius,
 		&i.FromDate,
 		&i.ToDate,
+		&i.UserID,
 		&i.EventsCount,
 		&i.Address,
-		&i.Region,
 		&i.Point,
 		&i.Lat,
 		&i.Long,
@@ -154,7 +167,6 @@ type CreateTempEventsParams struct {
 	Neighborhood pgtype.Text        `json:"neighborhood"`
 	LocationType pgtype.Text        `json:"location_type"`
 	CrimeType    CrimeType          `json:"crime_type"`
-	Region       string             `json:"region"`
 	Lat          float64            `json:"lat"`
 	Long         float64            `json:"long"`
 }
@@ -174,7 +186,7 @@ func (q *Queries) CreateTempEventsTable(ctx context.Context) error {
 
 const deleteArea = `-- name: DeleteArea :one
 DELETE FROM areas WHERE id = $1 AND user_id=$2
-RETURNING id, created_at, user_id, is_active, address, region, radius, point, lat, long
+RETURNING id, created_at, user_id, is_active, address, radius, point, lat, long
 `
 
 type DeleteAreaParams struct {
@@ -191,7 +203,6 @@ func (q *Queries) DeleteArea(ctx context.Context, arg DeleteAreaParams) (Area, e
 		&i.UserID,
 		&i.IsActive,
 		&i.Address,
-		&i.Region,
 		&i.Radius,
 		&i.Point,
 		&i.Lat,
@@ -201,9 +212,7 @@ func (q *Queries) DeleteArea(ctx context.Context, arg DeleteAreaParams) (Area, e
 }
 
 const getArea = `-- name: GetArea :one
-
-
-SELECT id, created_at, user_id, is_active, address, region, radius, point, lat, long FROM areas
+SELECT id, created_at, user_id, is_active, address, radius, point, lat, long FROM areas
 WHERE id = $1 AND user_id=$2
 `
 
@@ -212,9 +221,6 @@ type GetAreaParams struct {
 	UserID string      `json:"user_id"`
 }
 
-// =========================================
-//
-//	areas
 func (q *Queries) GetArea(ctx context.Context, arg GetAreaParams) (Area, error) {
 	row := q.db.QueryRow(ctx, getArea, arg.ID, arg.UserID)
 	var i Area
@@ -224,7 +230,6 @@ func (q *Queries) GetArea(ctx context.Context, arg GetAreaParams) (Area, error) 
 		&i.UserID,
 		&i.IsActive,
 		&i.Address,
-		&i.Region,
 		&i.Radius,
 		&i.Point,
 		&i.Lat,
@@ -234,7 +239,7 @@ func (q *Queries) GetArea(ctx context.Context, arg GetAreaParams) (Area, error) 
 }
 
 const getAreasByUser = `-- name: GetAreasByUser :many
-SELECT id, created_at, user_id, is_active, address, region, radius, point, lat, long FROM areas
+SELECT id, created_at, user_id, is_active, address, radius, point, lat, long FROM areas
 WHERE user_id = $1
 `
 
@@ -253,7 +258,6 @@ func (q *Queries) GetAreasByUser(ctx context.Context, userID string) ([]Area, er
 			&i.UserID,
 			&i.IsActive,
 			&i.Address,
-			&i.Region,
 			&i.Radius,
 			&i.Point,
 			&i.Lat,
@@ -270,7 +274,7 @@ func (q *Queries) GetAreasByUser(ctx context.Context, userID string) ([]Area, er
 }
 
 const getEventsByReport = `-- name: GetEventsByReport :many
-SELECT e.id, e.created_at, e.occur_at, e.external_id, e.neighborhood, e.location_type, e.crime_type, e.region, e.point, e.lat, e.long
+SELECT e.id, e.created_at, e.occur_at, e.external_id, e.neighborhood, e.location_type, e.crime_type, e.point, e.lat, e.long
 FROM events e
 INNER JOIN report_events re ON e.id = re.event_id
 INNER JOIN reports r ON re.report_id = r.id
@@ -294,7 +298,6 @@ func (q *Queries) GetEventsByReport(ctx context.Context, id pgtype.UUID) ([]Even
 			&i.Neighborhood,
 			&i.LocationType,
 			&i.CrimeType,
-			&i.Region,
 			&i.Point,
 			&i.Lat,
 			&i.Long,
@@ -311,7 +314,7 @@ func (q *Queries) GetEventsByReport(ctx context.Context, id pgtype.UUID) ([]Even
 
 const getReportDetails = `-- name: GetReportDetails :one
 
-SELECT r.id, r.created_at, r.user_id, r.is_reported, r.area_id, a.id, a.created_at, a.user_id, a.is_active, a.address, a.region, a.radius, a.point, a.lat, a.long
+SELECT r.id, r.created_at, r.user_id, r.is_reported, r.area_id, a.id, a.created_at, a.user_id, a.is_active, a.address, a.radius, a.point, a.lat, a.long
 FROM reports r
 INNER JOIN areas a ON r.area_id = a.id
 WHERE r.id = $1 AND r.user_id = $2
@@ -343,7 +346,6 @@ func (q *Queries) GetReportDetails(ctx context.Context, arg GetReportDetailsPara
 		&i.Area.UserID,
 		&i.Area.IsActive,
 		&i.Area.Address,
-		&i.Area.Region,
 		&i.Area.Radius,
 		&i.Area.Point,
 		&i.Area.Lat,
@@ -359,7 +361,6 @@ INSERT INTO events (
     neighborhood,
     location_type,
     crime_type,
-    region,
     lat,
     long
 )
@@ -369,7 +370,6 @@ SELECT
     neighborhood,
     location_type,
     crime_type,
-    region,
     lat,
     long
 FROM _temp_events
@@ -388,14 +388,14 @@ radius = $4,
 lat = $5,
 long = $6
 WHERE id = $1 AND user_id = $2
-RETURNING id, created_at, user_id, is_active, address, region, radius, point, lat, long
+RETURNING id, created_at, user_id, is_active, address, radius, point, lat, long
 `
 
 type UpdateAreaParams struct {
 	ID      pgtype.UUID `json:"id"`
 	UserID  string      `json:"user_id"`
 	Address string      `json:"address"`
-	Radius  float64     `json:"radius"`
+	Radius  int32       `json:"radius"`
 	Lat     float64     `json:"lat"`
 	Long    float64     `json:"long"`
 }
@@ -416,7 +416,6 @@ func (q *Queries) UpdateArea(ctx context.Context, arg UpdateAreaParams) (Area, e
 		&i.UserID,
 		&i.IsActive,
 		&i.Address,
-		&i.Region,
 		&i.Radius,
 		&i.Point,
 		&i.Lat,

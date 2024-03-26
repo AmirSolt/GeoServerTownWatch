@@ -15,10 +15,9 @@ INSERT INTO _temp_events (
     neighborhood,
     location_type,
     crime_type,
-    region,
     lat,
     long
-) VALUES ($1,$2,$3,$4,$5,$6,$7,$8);
+) VALUES ($1,$2,$3,$4,$5,$6,$7);
 
 -- name: MoveFromTempEventsToEvents :exec
 INSERT INTO events (
@@ -27,7 +26,6 @@ INSERT INTO events (
     neighborhood,
     location_type,
     crime_type,
-    region,
     lat,
     long
 )
@@ -37,7 +35,6 @@ SELECT
     neighborhood,
     location_type,
     crime_type,
-    region,
     lat,
     long
 FROM _temp_events
@@ -50,12 +47,15 @@ SELECT count(*) FROM events;
 SELECT count(*) FROM _temp_events;
 
 -- name: CreateScan :one
-INSERT INTO scans (radius, from_date, to_date, events_count, address, region, lat, long) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *;
+INSERT INTO scans (radius, from_date, to_date, events_count, address, user_id, lat, long) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *;
 
 
 -- =========================================
 --  areas
 
+-- name: CountAreasByUser :one
+SELECT count(*) FROM areas
+WHERE user_id = $1;
 
 -- name: GetArea :one
 SELECT * FROM areas
@@ -67,7 +67,7 @@ WHERE user_id = $1;
 
 
 -- name: CreateArea :one
-INSERT INTO areas (user_id, address, region, radius, lat, long) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *;
+INSERT INTO areas (user_id, address, radius, lat, long) VALUES ($1,$2,$3,$4,$5) RETURNING *;
 
 -- name: UpdateArea :one
 UPDATE areas SET 

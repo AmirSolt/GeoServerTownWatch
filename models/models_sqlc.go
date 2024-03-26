@@ -67,8 +67,7 @@ type Area struct {
 	UserID    string             `json:"user_id"`
 	IsActive  bool               `json:"is_active"`
 	Address   string             `json:"address"`
-	Region    string             `json:"region"`
-	Radius    float64            `json:"radius"`
+	Radius    int32              `json:"radius"`
 	Point     *string            `json:"point"`
 	Lat       float64            `json:"lat"`
 	Long      float64            `json:"long"`
@@ -82,7 +81,6 @@ type Event struct {
 	Neighborhood pgtype.Text        `json:"neighborhood"`
 	LocationType pgtype.Text        `json:"location_type"`
 	CrimeType    CrimeType          `json:"crime_type"`
-	Region       string             `json:"region"`
 	Point        *string            `json:"point"`
 	Lat          float64            `json:"lat"`
 	Long         float64            `json:"long"`
@@ -105,12 +103,12 @@ type ReportEvent struct {
 type Scan struct {
 	ID          int32              `json:"id"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	Radius      float64            `json:"radius"`
+	Radius      int32              `json:"radius"`
 	FromDate    pgtype.Timestamptz `json:"from_date"`
 	ToDate      pgtype.Timestamptz `json:"to_date"`
+	UserID      pgtype.Text        `json:"user_id"`
 	EventsCount int32              `json:"events_count"`
 	Address     string             `json:"address"`
-	Region      string             `json:"region"`
 	Point       *string            `json:"point"`
 	Lat         float64            `json:"lat"`
 	Long        float64            `json:"long"`
@@ -124,7 +122,6 @@ type TempEvent struct {
 	Neighborhood pgtype.Text        `json:"neighborhood"`
 	LocationType pgtype.Text        `json:"location_type"`
 	CrimeType    CrimeType          `json:"crime_type"`
-	Region       string             `json:"region"`
 	Point        *string            `json:"point"`
 	Lat          float64            `json:"lat"`
 	Long         float64            `json:"long"`

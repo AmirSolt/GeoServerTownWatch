@@ -7,14 +7,14 @@ import (
 )
 
 const scanPoint = `-- name: scanPoint :many
-SELECT id, created_at, occur_at, external_id, neighborhood, location_type, crime_type, region, point, lat, long
+SELECT id, created_at, occur_at, external_id, neighborhood, location_type, crime_type, point, lat, long
 FROM events
 WHERE 
 ST_DWithin(
     point::geography,
     ST_Point($1, $2, 4326)::geography,
-    $3,
-	true
+    CAST ($3 AS DOUBLE PRECISION),
+	false
 )
 AND occur_at >= $4
 AND occur_at <= $5
@@ -25,8 +25,7 @@ LIMIT $6
 type ScanPointParams struct {
 	Lat      float64            `json:"lat"`
 	Long     float64            `json:"long"`
-	Radius   float64            `json:"radius"`
-	Region   string             `json:"region"`
+	Radius   int32              `json:"radius"`
 	FromDate pgtype.Timestamptz `json:"to_date"`
 	ToDate   pgtype.Timestamptz `json:"from_date"`
 	Limit    int32              `json:"limit"`
@@ -56,7 +55,6 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, 
 			&i.Neighborhood,
 			&i.LocationType,
 			&i.CrimeType,
-			&i.Region,
 			&i.Point,
 			&i.Lat,
 			&i.Long,

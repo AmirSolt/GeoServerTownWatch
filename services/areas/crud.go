@@ -2,6 +2,7 @@ package areas
 
 import (
 	"math"
+	"strings"
 	"townwatch/base"
 	"townwatch/models"
 
@@ -107,10 +108,11 @@ func censorPostalCode(str string) string {
 	if len(str) == 0 {
 		return ""
 	}
+	trimmedStr := strings.ReplaceAll(str, " ", "")
 	numUncensored := 3
-	censored := make([]byte, len(str))
-	copy(censored, str[:numUncensored])
-	for i := numUncensored; i < len(str); i++ {
+	censored := make([]byte, len(trimmedStr))
+	copy(censored, trimmedStr[:numUncensored])
+	for i := numUncensored; i < len(trimmedStr); i++ {
 		censored[i] = '#'
 	}
 	return string(censored)

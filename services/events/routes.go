@@ -16,12 +16,13 @@ import (
 type ScanPointAPIParams struct {
 	Lat      float64 `json:"lat"`
 	Long     float64 `json:"long"`
-	Radius   float64 `json:"radius"`
+	Radius   int32   `json:"radius"`
 	Region   string  `json:"region"`
 	FromDate string  `json:"from_date"`
 	ToDate   string  `json:"to_date"`
 	Limit    int32   `json:"limit"`
 	Address  string  `json:"address"`
+	UserID   string  `json:"user_id"`
 }
 
 func LoadRoutes(b *base.Base) {
@@ -88,7 +89,7 @@ func LoadRoutes(b *base.Base) {
 				ToDate:      dbParams.ToDate,
 				EventsCount: int32(len(events)),
 				Address:     params.Address,
-				Region:      dbParams.Region,
+				UserID:      pgtype.Text{String: params.UserID, Valid: params.UserID != ""},
 				Lat:         dbParams.Lat,
 				Long:        dbParams.Long,
 			})
@@ -160,7 +161,6 @@ func ConvertParams(apiParams ScanPointAPIParams) (*models.ScanPointParams, *base
 		Lat:      apiParams.Lat,
 		Long:     apiParams.Long,
 		Radius:   apiParams.Radius,
-		Region:   apiParams.Region,
 		FromDate: *fromDate,
 		ToDate:   *toDate,
 		Limit:    apiParams.Limit,

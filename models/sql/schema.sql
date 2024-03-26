@@ -28,7 +28,6 @@ CREATE TABLE events (
     neighborhood TEXT,
     location_type TEXT,
     crime_type crime_type NOT NULL,
-    region TEXT NOT NULL,
     point geography(Point, 4326),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
@@ -48,14 +47,12 @@ CREATE TRIGGER on_event_insert BEFORE INSERT OR UPDATE ON events
 CREATE TABLE scans (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    radius DOUBLE PRECISION NOT NULL,
+    radius INT NOT NULL,
     from_date TIMESTAMPTZ NOT NULL,
     to_date TIMESTAMPTZ NOT NULL,
-
+    user_id TEXT,
     events_count INT NOT NULL,
     address TEXT NOT NULL,
-    region TEXT NOT NULL,
     point geography(Point, 4326),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
@@ -70,8 +67,7 @@ CREATE TABLE areas (
     user_id TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true,
     address TEXT NOT NULL,
-    region TEXT NOT NULL,
-    radius DOUBLE PRECISION NOT NULL,
+    radius INT NOT NULL,
     point geography(Point, 4326),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
@@ -107,8 +103,7 @@ DECLARE
 BEGIN
     FOR area_record IN SELECT * FROM areas WHERE is_active = true LOOP
         event_ids := ARRAY(SELECT id FROM events
-            WHERE ST_DWithin(point, area_record.point, area_record.radius, true)
-            AND region = area_record.region
+            WHERE ST_DWithin(point, area_record.point, area_record.radius, false)
             AND occur_at >= from_date
             AND occur_at <= to_date
             ORDER BY occur_at
