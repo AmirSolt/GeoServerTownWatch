@@ -104,11 +104,11 @@ func LoadRoutes(b *base.Base) {
 			ctx.JSON(http.StatusInternalServerError, cerr)
 			return
 		}
-		area, err := ReadAreasByUser(b, ctx, params)
+		areas, err := ReadAreasByUser(b, ctx, params)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err)
 			return
 		}
-		ctx.JSON(http.StatusOK, area)
+		ctx.JSON(http.StatusOK, areas)
 	})
 }
