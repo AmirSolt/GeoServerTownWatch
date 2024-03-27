@@ -93,8 +93,8 @@ CREATE TABLE reports (
     area_id uuid NOT NULL REFERENCES areas(id),
     CONSTRAINT fk_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE OR REPLACE FUNCTION create_global_reports(from_date TIMESTAMPTZ, to_date TIMESTAMPTZ, scan_events_count_limit INT)
-RETURNS SETOF record AS $$
+CREATE OR REPLACE FUNCTION create_global_reports(from_date TIMESTAMPTZ, to_date TIMESTAMPTZ, events_limit INT)
+RETURNS SETOF reports AS $$
 DECLARE
     area_record RECORD;
     event_ids INT[];
@@ -104,12 +104,18 @@ BEGIN
     FOR area_record IN SELECT * FROM areas WHERE is_active = true LOOP
         event_ids := ARRAY(SELECT id FROM events
             WHERE ST_DWithin(point, area_record.point, area_record.radius, false)
-            AND occur_at >= from_date
-            AND occur_at <= to_date
-            ORDER BY occur_at
-            LIMIT scan_events_limit
+            AND created_at >= from_date
+            AND created_at <= to_date
+            AND NOT EXISTS (
+                SELECT 1
+                FROM report_events
+                WHERE report_events.event_id = events.id
+            )
+            ORDER BY created_at
+            LIMIT events_limit
         );
         
+  
         IF array_length(event_ids, 1) > 0 THEN
             INSERT INTO reports (area_id, user_id) VALUES (area_record.id, area_record.user_id)
             RETURNING * INTO new_report;
@@ -124,6 +130,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
 -- ======
 
 CREATE TABLE report_events (
@@ -134,7 +141,8 @@ CREATE TABLE report_events (
     CONSTRAINT fk_report FOREIGN KEY(report_id) REFERENCES reports(id) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT fk_event FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE UNIQUE INDEX report_idx ON report_events("report_id");
+CREATE INDEX report_idx ON report_events("report_id");
+CREATE INDEX event_idx ON report_events("event_id");
 
 -- ======
 

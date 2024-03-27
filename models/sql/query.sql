@@ -103,8 +103,5 @@ WHERE r.id = $1;
 -- custom functions
 
 
--- name: CreateGlobalReports :many
-SELECT create_global_reports($1, $2, $3);
-
 
 

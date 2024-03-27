@@ -7,6 +7,7 @@ import (
 	"time"
 	"townwatch/base"
 	"townwatch/models"
+	"townwatch/utils"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
@@ -37,7 +38,7 @@ func LoadRoutes(b *base.Base) {
 		var params *ScanPointAPIParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
+			cerr := &utils.CError{
 				EventID: eventID,
 				Message: "Internal Server Error",
 				Error:   err,
@@ -67,13 +68,7 @@ func LoadRoutes(b *base.Base) {
 
 		events, err := b.Queries.ScanPoint(ctx, *dbParams)
 		if err != nil {
-			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
-				EventID: eventID,
-				Message: "Internal Server Error",
-				Error:   err,
-			}
-			ctx.JSON(http.StatusInternalServerError, cerr)
+			ctx.JSON(http.StatusInternalServerError, err)
 			return
 		}
 
@@ -109,11 +104,11 @@ func LoadRoutes(b *base.Base) {
 
 }
 
-func CreateScan(b *base.Base, ctx *gin.Context, params *models.CreateScanParams) (*models.Scan, *base.CError) {
+func CreateScan(b *base.Base, ctx *gin.Context, params *models.CreateScanParams) (*models.Scan, *utils.CError) {
 	scan, err := b.DB.Queries.CreateScan(ctx, *params)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		return nil, &base.CError{
+		return nil, &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -146,7 +141,7 @@ func CensorEvent(event models.Event) models.Event {
 	return event
 }
 
-func ConvertParams(apiParams ScanPointAPIParams) (*models.ScanPointParams, *base.CError) {
+func ConvertParams(apiParams ScanPointAPIParams) (*models.ScanPointParams, *utils.CError) {
 
 	fromDate, cerr := convertStrToTime(apiParams.FromDate)
 	if cerr != nil {
@@ -169,12 +164,12 @@ func ConvertParams(apiParams ScanPointAPIParams) (*models.ScanPointParams, *base
 	return &scanParams, nil
 }
 
-func convertStrToTime(timeStr string) (*pgtype.Timestamptz, *base.CError) {
+func convertStrToTime(timeStr string) (*pgtype.Timestamptz, *utils.CError) {
 	layout := "Mon, 02 Jan 2006 15:04:05 GMT"
 	convDate, err := time.Parse(layout, timeStr)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		cerr := &base.CError{
+		cerr := &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,

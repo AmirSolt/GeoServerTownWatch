@@ -84,40 +84,6 @@ func (q *Queries) CreateArea(ctx context.Context, arg CreateAreaParams) (Area, e
 	return i, err
 }
 
-const createGlobalReports = `-- name: CreateGlobalReports :many
-
-
-SELECT create_global_reports($1, $2, $3)
-`
-
-type CreateGlobalReportsParams struct {
-	FromDate             pgtype.Timestamptz `json:"from_date"`
-	ToDate               pgtype.Timestamptz `json:"to_date"`
-	ScanEventsCountLimit int32              `json:"scan_events_count_limit"`
-}
-
-// =========================================
-// custom functions
-func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalReportsParams) ([]interface{}, error) {
-	rows, err := q.db.Query(ctx, createGlobalReports, arg.FromDate, arg.ToDate, arg.ScanEventsCountLimit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []interface{}
-	for rows.Next() {
-		var create_global_reports interface{}
-		if err := rows.Scan(&create_global_reports); err != nil {
-			return nil, err
-		}
-		items = append(items, create_global_reports)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const createScan = `-- name: CreateScan :one
 INSERT INTO scans (radius, from_date, to_date, events_count, address, user_id, lat, long) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, created_at, radius, from_date, to_date, user_id, events_count, address, point, lat, long
 `

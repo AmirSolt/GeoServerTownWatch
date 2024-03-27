@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"townwatch/base"
 	"townwatch/models"
+	"townwatch/utils"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
@@ -17,7 +18,7 @@ func LoadRoutes(b *base.Base) {
 		var params *models.CreateAreaParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
+			cerr := &utils.CError{
 				EventID: eventID,
 				Message: "Internal Server Error",
 				Error:   err,
@@ -29,7 +30,7 @@ func LoadRoutes(b *base.Base) {
 		count, errc := b.Queries.CountAreasByUser(ctx, params.UserID)
 		if errc != nil {
 			eventID := sentry.CaptureException(errc)
-			cerr := &base.CError{
+			cerr := &utils.CError{
 				EventID: eventID,
 				Message: "Internal Server Error",
 				Error:   errc,
@@ -41,7 +42,7 @@ func LoadRoutes(b *base.Base) {
 		if count >= int64(b.MaxAreasByUser) {
 			err := fmt.Errorf("user has reached maximum area count")
 			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
+			cerr := &utils.CError{
 				EventID: eventID,
 				Message: "you have reached maximum area count",
 				Error:   err,
@@ -62,7 +63,7 @@ func LoadRoutes(b *base.Base) {
 		var params *models.GetAreaParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
+			cerr := &utils.CError{
 				EventID: eventID,
 				Message: "Internal Server Error",
 				Error:   err,
@@ -82,7 +83,7 @@ func LoadRoutes(b *base.Base) {
 		var params *models.UpdateAreaParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
+			cerr := &utils.CError{
 				EventID: eventID,
 				Message: "Internal Server Error",
 				Error:   err,
@@ -102,7 +103,7 @@ func LoadRoutes(b *base.Base) {
 		var params *models.DeleteAreaParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
+			cerr := &utils.CError{
 				EventID: eventID,
 				Message: "Internal Server Error",
 				Error:   err,
@@ -122,7 +123,7 @@ func LoadRoutes(b *base.Base) {
 		var params *GetAreasByUserParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
+			cerr := &utils.CError{
 				EventID: eventID,
 				Message: "Internal Server Error",
 				Error:   err,

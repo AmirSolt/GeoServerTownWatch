@@ -2,7 +2,9 @@ package models
 
 import (
 	"context"
+	"townwatch/utils"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -31,7 +33,7 @@ type ScanPointParams struct {
 	Limit    int32              `json:"limit"`
 }
 
-func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, error) {
+func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, *utils.CError) {
 	rows, err := q.db.Query(ctx, scanPoint,
 		arg.Long,
 		arg.Lat,
@@ -41,7 +43,13 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, 
 		arg.Limit,
 	)
 	if err != nil {
-		return nil, err
+		eventID := sentry.CaptureException(err)
+		cerr := &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+		return nil, cerr
 	}
 	defer rows.Close()
 	var items []Event
@@ -59,13 +67,78 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, 
 			&i.Lat,
 			&i.Long,
 		); err != nil {
-			return nil, err
+			eventID := sentry.CaptureException(err)
+			cerr := &utils.CError{
+				EventID: eventID,
+				Message: "Internal Server Error",
+				Error:   err,
+			}
+			return nil, cerr
 		}
 
 		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		eventID := sentry.CaptureException(err)
+		cerr := &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+		return nil, cerr
+	}
+	return items, nil
+}
+
+// ==============================================
+
+const createGlobalReports = `
+-- name: createGlobalReports :many
+SELECT create_global_reports($1, $2, $3)
+`
+
+type CreateGlobalReportsParams struct {
+	FromDate    pgtype.Timestamptz `json:"from_date"`
+	ToDate      pgtype.Timestamptz `json:"to_date"`
+	EventsLimit int32              `json:"events_limit"`
+}
+
+// =========================================
+// custom functions
+func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalReportsParams) ([]Report, *utils.CError) {
+	rows, err := q.db.Query(ctx, createGlobalReports, arg.FromDate, arg.ToDate, arg.EventsLimit)
+	if err != nil {
+		eventID := sentry.CaptureException(err)
+		cerr := &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+		return nil, cerr
+	}
+	defer rows.Close()
+	var items []Report
+	for rows.Next() {
+		var create_global_reports Report
+		if err := rows.Scan(&create_global_reports); err != nil {
+			eventID := sentry.CaptureException(err)
+			cerr := &utils.CError{
+				EventID: eventID,
+				Message: "Internal Server Error",
+				Error:   err,
+			}
+			return nil, cerr
+		}
+		items = append(items, create_global_reports)
+	}
+	if err := rows.Err(); err != nil {
+		eventID := sentry.CaptureException(err)
+		cerr := &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+		return nil, cerr
 	}
 	return items, nil
 }

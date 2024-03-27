@@ -5,16 +5,17 @@ import (
 	"strings"
 	"townwatch/base"
 	"townwatch/models"
+	"townwatch/utils"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 )
 
-func CreateArea(b *base.Base, ctx *gin.Context, params *models.CreateAreaParams) (*models.Area, *base.CError) {
+func CreateArea(b *base.Base, ctx *gin.Context, params *models.CreateAreaParams) (*models.Area, *utils.CError) {
 	area, err := b.DB.Queries.CreateArea(ctx, *params)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		return nil, &base.CError{
+		return nil, &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -25,11 +26,11 @@ func CreateArea(b *base.Base, ctx *gin.Context, params *models.CreateAreaParams)
 	return &cenArea, nil
 }
 
-func UpdateArea(b *base.Base, ctx *gin.Context, params *models.UpdateAreaParams) (*models.Area, *base.CError) {
+func UpdateArea(b *base.Base, ctx *gin.Context, params *models.UpdateAreaParams) (*models.Area, *utils.CError) {
 	area, err := b.DB.Queries.UpdateArea(ctx, *params)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		return nil, &base.CError{
+		return nil, &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -40,11 +41,11 @@ func UpdateArea(b *base.Base, ctx *gin.Context, params *models.UpdateAreaParams)
 	return &cenArea, nil
 }
 
-func ReadArea(b *base.Base, ctx *gin.Context, params *models.GetAreaParams) (*models.Area, *base.CError) {
+func ReadArea(b *base.Base, ctx *gin.Context, params *models.GetAreaParams) (*models.Area, *utils.CError) {
 	area, err := b.DB.Queries.GetArea(ctx, *params)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		return nil, &base.CError{
+		return nil, &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -55,11 +56,11 @@ func ReadArea(b *base.Base, ctx *gin.Context, params *models.GetAreaParams) (*mo
 	return &cenArea, nil
 }
 
-func DeleteArea(b *base.Base, ctx *gin.Context, params *models.DeleteAreaParams) (*models.Area, *base.CError) {
+func DeleteArea(b *base.Base, ctx *gin.Context, params *models.DeleteAreaParams) (*models.Area, *utils.CError) {
 	area, err := b.DB.Queries.DeleteArea(ctx, *params)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		return nil, &base.CError{
+		return nil, &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -74,11 +75,11 @@ type GetAreasByUserParams struct {
 	UserID string `json:"user_id"`
 }
 
-func ReadAreasByUser(b *base.Base, ctx *gin.Context, params *GetAreasByUserParams) (*[]models.Area, *base.CError) {
+func ReadAreasByUser(b *base.Base, ctx *gin.Context, params *GetAreasByUserParams) (*[]models.Area, *utils.CError) {
 	areas, err := b.DB.Queries.GetAreasByUser(ctx, params.UserID)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		return nil, &base.CError{
+		return nil, &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,

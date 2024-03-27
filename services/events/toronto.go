@@ -10,6 +10,7 @@ import (
 	"time"
 	"townwatch/base"
 	"townwatch/models"
+	"townwatch/utils"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/go-playground/validator/v10"
@@ -50,7 +51,7 @@ type ArcgisAttributes struct {
 	LocationCategory string  `json:"LOCATION_CATEGORY"`
 }
 
-func FetchAndStoreTorontoEvents(b *base.Base, ctx context.Context, fromDate time.Time, toDate time.Time) (int, *base.CError) {
+func FetchAndStoreTorontoEvents(b *base.Base, ctx context.Context, fromDate time.Time, toDate time.Time) (int, *utils.CError) {
 	response, cerr := fetchArcgisToronto(b, fromDate, toDate)
 	if cerr != nil {
 		return 0, cerr
@@ -66,11 +67,11 @@ func FetchAndStoreTorontoEvents(b *base.Base, ctx context.Context, fromDate time
 	return fetchCount, nil
 }
 
-func storeEvents(b *base.Base, ctx context.Context, eventParams *[]models.CreateTempEventsParams) *base.CError {
+func storeEvents(b *base.Base, ctx context.Context, eventParams *[]models.CreateTempEventsParams) *utils.CError {
 	tx, err := b.DB.Pool.Begin(ctx)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		return &base.CError{
+		return &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -81,7 +82,7 @@ func storeEvents(b *base.Base, ctx context.Context, eventParams *[]models.Create
 
 	if err := qtx.CreateTempEventsTable(ctx); err != nil {
 		eventID := sentry.CaptureException(err)
-		return &base.CError{
+		return &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -90,7 +91,7 @@ func storeEvents(b *base.Base, ctx context.Context, eventParams *[]models.Create
 	_, errInsert := qtx.CreateTempEvents(ctx, *eventParams)
 	if errInsert != nil {
 		eventID := sentry.CaptureException(errInsert)
-		return &base.CError{
+		return &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   errInsert,
@@ -99,7 +100,7 @@ func storeEvents(b *base.Base, ctx context.Context, eventParams *[]models.Create
 
 	if err := qtx.MoveFromTempEventsToEvents(ctx); err != nil {
 		eventID := sentry.CaptureException(err)
-		return &base.CError{
+		return &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -108,7 +109,7 @@ func storeEvents(b *base.Base, ctx context.Context, eventParams *[]models.Create
 
 	if err := tx.Commit(ctx); err != nil {
 		eventID := sentry.CaptureException(err)
-		return &base.CError{
+		return &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -118,7 +119,7 @@ func storeEvents(b *base.Base, ctx context.Context, eventParams *[]models.Create
 	return nil
 }
 
-func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*ArcgisResponse, *base.CError) {
+func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*ArcgisResponse, *utils.CError) {
 	toDateStr := fmt.Sprintf("AND OCC_DATE_AGOL <= date '%s'", convertToArcgisQueryTime(toDate))
 	where := fmt.Sprintf("OCC_DATE_AGOL >= date '%s' %s", convertToArcgisQueryTime(fromDate), toDateStr)
 	sr := "4326"
@@ -126,7 +127,7 @@ func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*Ar
 	resp, err := http.Get(endpoint)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
-		return nil, &base.CError{
+		return nil, &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -137,7 +138,7 @@ func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*Ar
 	var response ArcgisResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		eventID := sentry.CaptureException(err)
-		return nil, &base.CError{
+		return nil, &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,
@@ -152,7 +153,7 @@ func fetchArcgisToronto(b *base.Base, fromDate time.Time, toDate time.Time) (*Ar
 	vErr := validate.Struct(response)
 	if vErr != nil {
 		eventID := sentry.CaptureException(err)
-		return nil, &base.CError{
+		return nil, &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
 			Error:   err,

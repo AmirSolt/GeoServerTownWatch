@@ -3,10 +3,14 @@ package reports
 import (
 	"fmt"
 	"net/http"
+	"time"
 	"townwatch/base"
+	"townwatch/models"
+	"townwatch/utils"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 func LoadRoutes(b *base.Base) {
@@ -16,7 +20,7 @@ func LoadRoutes(b *base.Base) {
 		if !exists {
 			err := fmt.Errorf("report id does not exist")
 			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
+			cerr := &utils.CError{
 				EventID: eventID,
 				Message: "Report id does not exist",
 				Error:   err,
@@ -42,7 +46,7 @@ func LoadRoutes(b *base.Base) {
 		if !exists {
 			err := fmt.Errorf("report id does not exist")
 			eventID := sentry.CaptureException(err)
-			cerr := &base.CError{
+			cerr := &utils.CError{
 				EventID: eventID,
 				Message: "Report id does not exist",
 				Error:   err,
@@ -56,5 +60,35 @@ func LoadRoutes(b *base.Base) {
 			return
 		}
 		ctx.JSON(http.StatusOK, events)
+	})
+
+	if !b.IS_PROD {
+		testReportCron(b)
+	}
+}
+
+func testReportCron(b *base.Base) {
+	b.Engine.GET("/api/reports/test", func(ctx *gin.Context) {
+		reports, err := b.DB.Queries.CreateGlobalReports(ctx, models.CreateGlobalReportsParams{
+			FromDate: pgtype.Timestamptz{
+				Time:  time.Now().Add(-time.Duration(24) * time.Hour).UTC(),
+				Valid: true,
+			},
+			ToDate: pgtype.Timestamptz{
+				Time:  time.Now().UTC(),
+				Valid: true,
+			},
+			EventsLimit: int32(b.ScanEventCountLimit),
+		})
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err)
+			return
+		}
+
+		fmt.Println("=======")
+		fmt.Println("reports", reports)
+
+		ctx.JSON(http.StatusOK, reports)
+
 	})
 }
