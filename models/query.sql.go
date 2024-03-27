@@ -317,13 +317,8 @@ const getReportDetails = `-- name: GetReportDetails :one
 SELECT r.id, r.created_at, r.user_id, r.is_reported, r.area_id, a.id, a.created_at, a.user_id, a.is_active, a.address, a.radius, a.point, a.lat, a.long
 FROM reports r
 INNER JOIN areas a ON r.area_id = a.id
-WHERE r.id = $1 AND r.user_id = $2
+WHERE r.id = $1
 `
-
-type GetReportDetailsParams struct {
-	ID     pgtype.UUID `json:"id"`
-	UserID string      `json:"user_id"`
-}
 
 type GetReportDetailsRow struct {
 	Report Report `json:"report"`
@@ -332,8 +327,8 @@ type GetReportDetailsRow struct {
 
 // =========================================
 // reports
-func (q *Queries) GetReportDetails(ctx context.Context, arg GetReportDetailsParams) (GetReportDetailsRow, error) {
-	row := q.db.QueryRow(ctx, getReportDetails, arg.ID, arg.UserID)
+func (q *Queries) GetReportDetails(ctx context.Context, id pgtype.UUID) (GetReportDetailsRow, error) {
+	row := q.db.QueryRow(ctx, getReportDetails, id)
 	var i GetReportDetailsRow
 	err := row.Scan(
 		&i.Report.ID,

@@ -89,7 +89,7 @@ RETURNING *;
 SELECT sqlc.embed(r), sqlc.embed(a)
 FROM reports r
 INNER JOIN areas a ON r.area_id = a.id
-WHERE r.id = $1 AND r.user_id = $2;
+WHERE r.id = $1;
 
 -- name: GetEventsByReport :many
 SELECT e.*
