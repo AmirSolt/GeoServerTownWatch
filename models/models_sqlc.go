@@ -62,7 +62,7 @@ func (ns NullCrimeType) Value() (driver.Value, error) {
 }
 
 type Area struct {
-	ID        pgtype.UUID        `json:"id"`
+	ID        string             `json:"id"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UserID    string             `json:"user_id"`
 	IsActive  bool               `json:"is_active"`
@@ -87,16 +87,15 @@ type Event struct {
 }
 
 type Report struct {
-	ID         pgtype.UUID        `json:"id"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
-	UserID     string             `json:"user_id"`
-	IsReported bool               `json:"is_reported"`
-	AreaID     pgtype.UUID        `json:"area_id"`
+	ID        string             `json:"id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UserID    string             `json:"user_id"`
+	AreaID    string             `json:"area_id"`
 }
 
 type ReportEvent struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	ReportID  pgtype.UUID        `json:"report_id"`
+	ReportID  string             `json:"report_id"`
 	EventID   int32              `json:"event_id"`
 }
 

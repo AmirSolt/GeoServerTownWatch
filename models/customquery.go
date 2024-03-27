@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"fmt"
 	"townwatch/utils"
 
 	"github.com/getsentry/sentry-go"
@@ -94,7 +95,41 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, 
 
 const createGlobalReports = `
 -- name: createGlobalReports :many
-SELECT create_global_reports($1, $2, $3)
+WITH scanned AS(
+	SELECT
+	a.id as area_id,
+	a.user_id,
+	e.id as event_id
+	FROM
+	areas a
+	JOIN
+	events e 
+	ON ST_DWithin(e.point, a.point, a.radius, false)
+	AND e.created_at >= $1
+	AND e.created_at <= $2 	
+	AND NOT EXISTS (
+	  SELECT 1
+	  FROM report_events
+	  WHERE report_events.event_id = e.id
+	)
+	LIMIT $3
+  ),
+  inserted_reports AS (
+	  INSERT INTO reports (area_id, user_id)
+	  SELECT DISTINCT ON (scanned.area_id) scanned.area_id, scanned.user_id
+	  FROM
+		  scanned
+		RETURNING *
+  ),
+  inserted_events_report AS (
+   INSERT INTO report_events (report_id, event_id)
+	SELECT inserted_reports.id, scanned.event_id
+	FROM
+		scanned
+	JOIN
+	  inserted_reports ON inserted_reports.area_id = scanned.area_id
+  )
+  select * from inserted_reports
 `
 
 type CreateGlobalReportsParams struct {
@@ -119,8 +154,21 @@ func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalRepor
 	defer rows.Close()
 	var items []Report
 	for rows.Next() {
-		var create_global_reports Report
-		if err := rows.Scan(&create_global_reports); err != nil {
+
+		fmt.Println("=====----=-=--=-")
+		columnValues, _ := rows.Values()
+		for i, v := range columnValues {
+			fmt.Printf("Type of value at %v=%T, value=%v | \n", i, v, v)
+		}
+		fmt.Println("=====----=-=--=-")
+
+		var i Report
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UserID,
+			&i.AreaID,
+		); err != nil {
 			eventID := sentry.CaptureException(err)
 			cerr := &utils.CError{
 				EventID: eventID,
@@ -129,7 +177,7 @@ func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalRepor
 			}
 			return nil, cerr
 		}
-		items = append(items, create_global_reports)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		eventID := sentry.CaptureException(err)

@@ -156,8 +156,8 @@ RETURNING id, created_at, user_id, is_active, address, radius, point, lat, long
 `
 
 type DeleteAreaParams struct {
-	ID     pgtype.UUID `json:"id"`
-	UserID string      `json:"user_id"`
+	ID     string `json:"id"`
+	UserID string `json:"user_id"`
 }
 
 func (q *Queries) DeleteArea(ctx context.Context, arg DeleteAreaParams) (Area, error) {
@@ -183,8 +183,8 @@ WHERE id = $1 AND user_id=$2
 `
 
 type GetAreaParams struct {
-	ID     pgtype.UUID `json:"id"`
-	UserID string      `json:"user_id"`
+	ID     string `json:"id"`
+	UserID string `json:"user_id"`
 }
 
 func (q *Queries) GetArea(ctx context.Context, arg GetAreaParams) (Area, error) {
@@ -247,7 +247,7 @@ INNER JOIN reports r ON re.report_id = r.id
 WHERE r.id = $1
 `
 
-func (q *Queries) GetEventsByReport(ctx context.Context, id pgtype.UUID) ([]Event, error) {
+func (q *Queries) GetEventsByReport(ctx context.Context, id string) ([]Event, error) {
 	rows, err := q.db.Query(ctx, getEventsByReport, id)
 	if err != nil {
 		return nil, err
@@ -280,7 +280,7 @@ func (q *Queries) GetEventsByReport(ctx context.Context, id pgtype.UUID) ([]Even
 
 const getReportDetails = `-- name: GetReportDetails :one
 
-SELECT r.id, r.created_at, r.user_id, r.is_reported, r.area_id, a.id, a.created_at, a.user_id, a.is_active, a.address, a.radius, a.point, a.lat, a.long
+SELECT r.id, r.created_at, r.user_id, r.area_id, a.id, a.created_at, a.user_id, a.is_active, a.address, a.radius, a.point, a.lat, a.long
 FROM reports r
 INNER JOIN areas a ON r.area_id = a.id
 WHERE r.id = $1
@@ -293,14 +293,13 @@ type GetReportDetailsRow struct {
 
 // =========================================
 // reports
-func (q *Queries) GetReportDetails(ctx context.Context, id pgtype.UUID) (GetReportDetailsRow, error) {
+func (q *Queries) GetReportDetails(ctx context.Context, id string) (GetReportDetailsRow, error) {
 	row := q.db.QueryRow(ctx, getReportDetails, id)
 	var i GetReportDetailsRow
 	err := row.Scan(
 		&i.Report.ID,
 		&i.Report.CreatedAt,
 		&i.Report.UserID,
-		&i.Report.IsReported,
 		&i.Report.AreaID,
 		&i.Area.ID,
 		&i.Area.CreatedAt,
@@ -353,12 +352,12 @@ RETURNING id, created_at, user_id, is_active, address, radius, point, lat, long
 `
 
 type UpdateAreaParams struct {
-	ID      pgtype.UUID `json:"id"`
-	UserID  string      `json:"user_id"`
-	Address string      `json:"address"`
-	Radius  int32       `json:"radius"`
-	Lat     float64     `json:"lat"`
-	Long    float64     `json:"long"`
+	ID      string  `json:"id"`
+	UserID  string  `json:"user_id"`
+	Address string  `json:"address"`
+	Radius  int32   `json:"radius"`
+	Lat     float64 `json:"lat"`
+	Long    float64 `json:"long"`
 }
 
 func (q *Queries) UpdateArea(ctx context.Context, arg UpdateAreaParams) (Area, error) {

@@ -89,46 +89,10 @@ CREATE TABLE reports (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id TEXT NOT NULL UNIQUE,
-    is_reported BOOLEAN NOT NULL DEFAULT false,
     area_id uuid NOT NULL REFERENCES areas(id),
     CONSTRAINT fk_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE OR REPLACE FUNCTION create_global_reports(from_date TIMESTAMPTZ, to_date TIMESTAMPTZ, events_limit INT)
-RETURNS SETOF reports AS $$
-DECLARE
-    area_record RECORD;
-    event_ids INT[];
-    event_id INT;
-    new_report RECORD;
-BEGIN
-    FOR area_record IN SELECT * FROM areas WHERE is_active = true LOOP
-        event_ids := ARRAY(SELECT id FROM events
-            WHERE ST_DWithin(point, area_record.point, area_record.radius, false)
-            AND created_at >= from_date
-            AND created_at <= to_date
-            AND NOT EXISTS (
-                SELECT 1
-                FROM report_events
-                WHERE report_events.event_id = events.id
-            )
-            ORDER BY created_at
-            LIMIT events_limit
-        );
-        
-  
-        IF array_length(event_ids, 1) > 0 THEN
-            INSERT INTO reports (area_id, user_id) VALUES (area_record.id, area_record.user_id)
-            RETURNING * INTO new_report;
-            
-            FOREACH event_id IN ARRAY event_ids LOOP
-                INSERT INTO report_events (report_id, event_id) VALUES (new_report.id, event_id);
-            END LOOP;
 
-            RETURN NEXT new_report;
-        END IF;
-    END LOOP;
-END;
-$$ LANGUAGE plpgsql;
 
 
 -- ======

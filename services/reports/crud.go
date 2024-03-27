@@ -9,7 +9,6 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type ReportDetailsResponse struct {
@@ -18,9 +17,17 @@ type ReportDetailsResponse struct {
 }
 
 func GetReportDetails(b *base.Base, ctx *gin.Context, reportID string) (*models.GetReportDetailsRow, *utils.CError) {
-	var byteArray [16]byte
-	copy(byteArray[:], reportID)
-	reportDetails, err := b.DB.Queries.GetReportDetails(ctx, pgtype.UUID{Bytes: byteArray, Valid: true})
+	// reportIDBytes, err := utils.ParseUUID(reportID)
+	// if err != nil {
+	// 	eventID := sentry.CaptureException(err)
+	// 	return nil, &utils.CError{
+	// 		EventID: eventID,
+	// 		Message: "Internal Server Error",
+	// 		Error:   err,
+	// 	}
+	// }
+
+	reportDetails, err := b.DB.Queries.GetReportDetails(ctx, reportID)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
 		return nil, &utils.CError{
@@ -36,10 +43,17 @@ func GetReportDetails(b *base.Base, ctx *gin.Context, reportID string) (*models.
 }
 
 func GetEventsByReport(b *base.Base, ctx *gin.Context, reportID string, censorEvents bool) (*[]models.Event, *utils.CError) {
-	var byteArray [16]byte
-	copy(byteArray[:], reportID)
+	// reportIDBytes, err := utils.ParseUUID(reportID)
+	// if err != nil {
+	// 	eventID := sentry.CaptureException(err)
+	// 	return nil, &utils.CError{
+	// 		EventID: eventID,
+	// 		Message: "Internal Server Error",
+	// 		Error:   err,
+	// 	}
+	// }
 
-	eventsO, err := b.DB.Queries.GetEventsByReport(ctx, pgtype.UUID{Bytes: byteArray, Valid: true})
+	eventsO, err := b.DB.Queries.GetEventsByReport(ctx, reportID)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
 		return nil, &utils.CError{

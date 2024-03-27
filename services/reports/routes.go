@@ -17,6 +17,10 @@ func LoadRoutes(b *base.Base) {
 
 	b.Engine.GET("/api/reports/:id", func(ctx *gin.Context) {
 		reportID, exists := ctx.Params.Get("id")
+
+		fmt.Println("=========")
+		fmt.Println("reportID", reportID)
+		fmt.Println("=========")
 		if !exists {
 			err := fmt.Errorf("report id does not exist")
 			eventID := sentry.CaptureException(err)
