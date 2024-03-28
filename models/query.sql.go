@@ -206,7 +206,7 @@ func (q *Queries) GetArea(ctx context.Context, arg GetAreaParams) (Area, error) 
 
 const getAreasByUser = `-- name: GetAreasByUser :many
 SELECT id, created_at, user_id, is_active, address, radius, point, lat, long FROM areas
-WHERE user_id = $1
+WHERE user_id = $1 ORDER BY created_at
 `
 
 func (q *Queries) GetAreasByUser(ctx context.Context, userID string) ([]Area, error) {

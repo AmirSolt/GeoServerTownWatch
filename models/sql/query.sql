@@ -63,7 +63,7 @@ WHERE id = $1 AND user_id=$2;
 
 -- name: GetAreasByUser :many
 SELECT * FROM areas
-WHERE user_id = $1;
+WHERE user_id = $1 ORDER BY created_at;
 
 
 -- name: CreateArea :one
