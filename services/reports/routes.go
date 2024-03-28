@@ -41,7 +41,7 @@ func LoadRoutes(b *base.Base) {
 		ctx.JSON(http.StatusOK, reports)
 	})
 
-	b.Engine.GET("/api/reports/area", func(ctx *gin.Context) {
+	b.Engine.POST("/api/reports/area", func(ctx *gin.Context) {
 		var params *models.GetReportsByAreaParams
 		if err := ctx.BindJSON(&params); err != nil {
 			eventID := sentry.CaptureException(err)
