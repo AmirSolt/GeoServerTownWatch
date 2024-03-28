@@ -85,6 +85,11 @@ RETURNING *;
 -- =========================================
 -- reports
 
+-- name: GetReportsByUser :many
+SELECT * FROM reports
+WHERE user_id = $1;
+
+
 -- name: GetReportDetails :one
 SELECT sqlc.embed(r), sqlc.embed(a)
 FROM reports r

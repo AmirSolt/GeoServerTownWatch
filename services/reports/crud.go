@@ -17,16 +17,6 @@ type ReportDetailsResponse struct {
 }
 
 func GetReportDetails(b *base.Base, ctx *gin.Context, reportID string) (*models.GetReportDetailsRow, *utils.CError) {
-	// reportIDBytes, err := utils.ParseUUID(reportID)
-	// if err != nil {
-	// 	eventID := sentry.CaptureException(err)
-	// 	return nil, &utils.CError{
-	// 		EventID: eventID,
-	// 		Message: "Internal Server Error",
-	// 		Error:   err,
-	// 	}
-	// }
-
 	reportDetails, err := b.DB.Queries.GetReportDetails(ctx, reportID)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
@@ -43,16 +33,6 @@ func GetReportDetails(b *base.Base, ctx *gin.Context, reportID string) (*models.
 }
 
 func GetEventsByReport(b *base.Base, ctx *gin.Context, reportID string, censorEvents bool) (*[]models.Event, *utils.CError) {
-	// reportIDBytes, err := utils.ParseUUID(reportID)
-	// if err != nil {
-	// 	eventID := sentry.CaptureException(err)
-	// 	return nil, &utils.CError{
-	// 		EventID: eventID,
-	// 		Message: "Internal Server Error",
-	// 		Error:   err,
-	// 	}
-	// }
-
 	eventsO, err := b.DB.Queries.GetEventsByReport(ctx, reportID)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
@@ -67,4 +47,17 @@ func GetEventsByReport(b *base.Base, ctx *gin.Context, reportID string, censorEv
 		cenEvents = events.CensorEvents(eventsO)
 	}
 	return &cenEvents, nil
+}
+
+func GetReportsByUser(b *base.Base, ctx *gin.Context, userID string) (*[]models.Report, *utils.CError) {
+	reports, err := b.DB.Queries.GetReportsByUser(ctx, userID)
+	if err != nil {
+		eventID := sentry.CaptureException(err)
+		return nil, &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+	}
+	return &reports, nil
 }

@@ -279,7 +279,6 @@ func (q *Queries) GetEventsByReport(ctx context.Context, id string) ([]Event, er
 }
 
 const getReportDetails = `-- name: GetReportDetails :one
-
 SELECT r.id, r.created_at, r.user_id, r.area_id, a.id, a.created_at, a.user_id, a.is_active, a.address, a.radius, a.point, a.lat, a.long
 FROM reports r
 INNER JOIN areas a ON r.area_id = a.id
@@ -291,8 +290,6 @@ type GetReportDetailsRow struct {
 	Area   Area   `json:"area"`
 }
 
-// =========================================
-// reports
 func (q *Queries) GetReportDetails(ctx context.Context, id string) (GetReportDetailsRow, error) {
 	row := q.db.QueryRow(ctx, getReportDetails, id)
 	var i GetReportDetailsRow
@@ -312,6 +309,39 @@ func (q *Queries) GetReportDetails(ctx context.Context, id string) (GetReportDet
 		&i.Area.Long,
 	)
 	return i, err
+}
+
+const getReportsByUser = `-- name: GetReportsByUser :many
+
+SELECT id, created_at, user_id, area_id FROM reports
+WHERE user_id = $1
+`
+
+// =========================================
+// reports
+func (q *Queries) GetReportsByUser(ctx context.Context, userID string) ([]Report, error) {
+	rows, err := q.db.Query(ctx, getReportsByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Report
+	for rows.Next() {
+		var i Report
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UserID,
+			&i.AreaID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const moveFromTempEventsToEvents = `-- name: MoveFromTempEventsToEvents :exec

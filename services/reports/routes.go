@@ -13,14 +13,37 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type GetReportsByUserParams struct {
+	UserID string `json:"user_id"`
+}
+
 func LoadRoutes(b *base.Base) {
+
+	b.Engine.POST("/api/reports", func(ctx *gin.Context) {
+
+		var params *GetReportsByUserParams
+		if err := ctx.BindJSON(&params); err != nil {
+			eventID := sentry.CaptureException(err)
+			cerr := &utils.CError{
+				EventID: eventID,
+				Message: "Internal Server Error",
+				Error:   err,
+			}
+			ctx.JSON(http.StatusInternalServerError, cerr)
+			return
+		}
+
+		reports, err := GetReportsByUser(b, ctx, params.UserID)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err)
+			return
+		}
+		ctx.JSON(http.StatusOK, reports)
+	})
 
 	b.Engine.GET("/api/reports/:id", func(ctx *gin.Context) {
 		reportID, exists := ctx.Params.Get("id")
 
-		fmt.Println("=========")
-		fmt.Println("reportID", reportID)
-		fmt.Println("=========")
 		if !exists {
 			err := fmt.Errorf("report id does not exist")
 			eventID := sentry.CaptureException(err)
