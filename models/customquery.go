@@ -112,6 +112,7 @@ WITH scanned AS(
 	  FROM report_events
 	  WHERE report_events.event_id = e.id
 	)
+	ORDER BY e.created_at
 	LIMIT $3
   ),
   inserted_reports AS (

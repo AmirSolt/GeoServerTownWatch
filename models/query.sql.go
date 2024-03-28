@@ -314,7 +314,7 @@ func (q *Queries) GetReportDetails(ctx context.Context, id string) (GetReportDet
 const getReportsByUser = `-- name: GetReportsByUser :many
 
 SELECT id, created_at, user_id, area_id FROM reports
-WHERE user_id = $1
+WHERE user_id = $1 ORDER BY created_at
 `
 
 // =========================================
