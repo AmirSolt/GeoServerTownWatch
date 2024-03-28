@@ -311,6 +311,41 @@ func (q *Queries) GetReportDetails(ctx context.Context, id string) (GetReportDet
 	return i, err
 }
 
+const getReportsByArea = `-- name: GetReportsByArea :many
+SELECT id, created_at, user_id, area_id FROM reports
+WHERE user_id = $1 AND area_id = $2 ORDER BY created_at
+`
+
+type GetReportsByAreaParams struct {
+	UserID string `json:"user_id"`
+	AreaID string `json:"area_id"`
+}
+
+func (q *Queries) GetReportsByArea(ctx context.Context, arg GetReportsByAreaParams) ([]Report, error) {
+	rows, err := q.db.Query(ctx, getReportsByArea, arg.UserID, arg.AreaID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Report
+	for rows.Next() {
+		var i Report
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UserID,
+			&i.AreaID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getReportsByUser = `-- name: GetReportsByUser :many
 
 SELECT id, created_at, user_id, area_id FROM reports

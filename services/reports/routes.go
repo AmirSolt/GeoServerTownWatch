@@ -19,7 +19,7 @@ type GetReportsByUserParams struct {
 
 func LoadRoutes(b *base.Base) {
 
-	b.Engine.POST("/api/reports", func(ctx *gin.Context) {
+	b.Engine.POST("/api/reports/user", func(ctx *gin.Context) {
 
 		var params *GetReportsByUserParams
 		if err := ctx.BindJSON(&params); err != nil {
@@ -41,15 +41,36 @@ func LoadRoutes(b *base.Base) {
 		ctx.JSON(http.StatusOK, reports)
 	})
 
+	b.Engine.GET("/api/reports/area", func(ctx *gin.Context) {
+		var params *models.GetReportsByAreaParams
+		if err := ctx.BindJSON(&params); err != nil {
+			eventID := sentry.CaptureException(err)
+			cerr := &utils.CError{
+				EventID: eventID,
+				Message: "Internal Server Error",
+				Error:   err,
+			}
+			ctx.JSON(http.StatusInternalServerError, cerr)
+			return
+		}
+
+		reports, err := GetReportsByArea(b, ctx, params)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, err)
+			return
+		}
+		ctx.JSON(http.StatusOK, reports)
+	})
+
 	b.Engine.GET("/api/reports/:id", func(ctx *gin.Context) {
 		reportID, exists := ctx.Params.Get("id")
 
 		if !exists {
-			err := fmt.Errorf("report id does not exist")
+			err := fmt.Errorf("report id does not exist in URL")
 			eventID := sentry.CaptureException(err)
 			cerr := &utils.CError{
 				EventID: eventID,
-				Message: "Report id does not exist",
+				Message: "This url is broken",
 				Error:   err,
 			}
 			ctx.JSON(http.StatusInternalServerError, cerr)

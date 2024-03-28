@@ -89,6 +89,10 @@ RETURNING *;
 SELECT * FROM reports
 WHERE user_id = $1 ORDER BY created_at;
 
+-- name: GetReportsByArea :many
+SELECT * FROM reports
+WHERE user_id = $1 AND area_id = $2 ORDER BY created_at;
+
 
 -- name: GetReportDetails :one
 SELECT sqlc.embed(r), sqlc.embed(a)

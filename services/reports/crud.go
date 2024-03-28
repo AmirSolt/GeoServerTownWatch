@@ -61,3 +61,16 @@ func GetReportsByUser(b *base.Base, ctx *gin.Context, userID string) (*[]models.
 	}
 	return &reports, nil
 }
+
+func GetReportsByArea(b *base.Base, ctx *gin.Context, params *models.GetReportsByAreaParams) (*[]models.Report, *utils.CError) {
+	reports, err := b.DB.Queries.GetReportsByArea(ctx, *params)
+	if err != nil {
+		eventID := sentry.CaptureException(err)
+		return nil, &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+	}
+	return &reports, nil
+}
