@@ -56,7 +56,7 @@ func LoadCronJobs(b *base.Base, c *cron.Cron) {
 		}
 
 		errreq := requests.
-			URL(fmt.Sprintf("%s/api/notifs/create", b.USER_SERVER_URL)).
+			URL(fmt.Sprintf("%s/api/notifs/create/many", b.USER_SERVER_URL)).
 			Method(http.MethodPost).
 			Header(base.HeaderSecretKeyName, b.SECRET_API_KEY).
 			BodyJSON(&NotifCreateManyParams{params: params}).
