@@ -45,5 +45,7 @@ func LoadCronJobs(b *base.Base, c *cron.Cron) {
 		}
 	})
 
-	sentry.CaptureException(err)
+	if err != nil {
+		sentry.CaptureException(err)
+	}
 }
