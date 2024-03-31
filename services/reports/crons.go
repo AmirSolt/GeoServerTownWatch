@@ -15,7 +15,7 @@ import (
 )
 
 func LoadCronJobs(b *base.Base, c *cron.Cron) {
-	c.AddFunc("0 30 * * * *", func() {
+	err := c.AddFunc("0 30 * * * *", func() {
 
 		reports, err := b.DB.Queries.CreateGlobalReports(context.Background(), models.CreateGlobalReportsParams{
 			FromDate: pgtype.Timestamptz{
@@ -44,4 +44,6 @@ func LoadCronJobs(b *base.Base, c *cron.Cron) {
 			return
 		}
 	})
+
+	sentry.CaptureException(err)
 }
