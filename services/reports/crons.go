@@ -25,7 +25,7 @@ type NotifCreateParams struct {
 }
 
 func LoadCronJobs(b *base.Base, c *cron.Cron) {
-	err := c.AddFunc("0 30 * * * *", func() {
+	err := c.AddFunc("0 30 * * * ", func() {
 
 		sentry.CaptureMessage(fmt.Sprintf("Reports cron started at: %s", time.Now().Format(time.RFC1123)))
 

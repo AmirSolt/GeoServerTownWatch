@@ -7,6 +7,7 @@ import (
 	"townwatch/services/events"
 	"townwatch/services/reports"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/robfig/cron"
 )
 
@@ -23,10 +24,17 @@ func main() {
 
 	go func() {
 		c := cron.New()
+
+		defer func() {
+			if r := recover(); r != nil {
+				sentry.CaptureException(fmt.Errorf("recovered panic: %v", r))
+			}
+		}()
+
 		events.LoadCronJobs(b, c)
 		reports.LoadCronJobs(b, c)
 		c.Start()
-		defer c.Stop()
+		// defer c.Stop()
 	}()
 
 	fmt.Println("=======")
