@@ -1,6 +1,7 @@
 package areas
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"townwatch/base"
@@ -12,22 +13,32 @@ import (
 )
 
 func CreateArea(b *base.Base, ctx *gin.Context, params *models.CreateAreaParams) (*models.Area, *utils.CError) {
-	area, err := b.DB.Queries.CreateArea(ctx, *params)
-	if err != nil {
-		eventID := sentry.CaptureException(err)
-		return nil, &utils.CError{
+
+	count, errc := b.Queries.CountAreasByUser(ctx, params.UserID)
+	if errc != nil {
+		eventID := sentry.CaptureException(errc)
+		cerr := &utils.CError{
 			EventID: eventID,
 			Message: "Internal Server Error",
-			Error:   err,
+			Error:   errc,
 		}
+		return nil, cerr
 	}
 
-	cenArea := CensorArea(area)
-	return &cenArea, nil
-}
+	if count >= int64(b.MaxAreasByUser) {
+		err := fmt.Errorf("user has reached maximum area count")
+		eventID := sentry.CaptureException(err)
+		cerr := &utils.CError{
+			EventID: eventID,
+			Message: "you have reached maximum area count",
+			Error:   err,
+		}
+		return nil, cerr
+	}
 
-func UpdateArea(b *base.Base, ctx *gin.Context, params *models.UpdateAreaParams) (*models.Area, *utils.CError) {
-	area, err := b.DB.Queries.UpdateArea(ctx, *params)
+	params.Address = removeSpaceAndCapitalize(params.Address)
+
+	area, err := b.DB.Queries.CreateArea(ctx, *params)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
 		return nil, &utils.CError{
@@ -109,11 +120,10 @@ func censorPostalCode(str string) string {
 	if len(str) == 0 {
 		return ""
 	}
-	trimmedStr := strings.ReplaceAll(str, " ", "")
 	numUncensored := 3
-	censored := make([]byte, len(trimmedStr))
-	copy(censored, trimmedStr[:numUncensored])
-	for i := numUncensored; i < len(trimmedStr); i++ {
+	censored := make([]byte, len(str))
+	copy(censored, str[:numUncensored])
+	for i := numUncensored; i < len(str); i++ {
 		censored[i] = '#'
 	}
 	return string(censored)
@@ -123,4 +133,10 @@ func roundCoordinates(num float64, decimals int) float64 {
 	multiplier := math.Pow10(decimals)
 	rounded := math.Round(num * multiplier)
 	return rounded / multiplier
+}
+
+func removeSpaceAndCapitalize(input string) string {
+	input = strings.ReplaceAll(input, " ", "")
+	input = strings.ToUpper(input)
+	return input
 }
