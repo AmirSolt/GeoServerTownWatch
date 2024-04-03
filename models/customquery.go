@@ -110,7 +110,7 @@ WITH scanned AS(
 	AND NOT EXISTS (
 	  SELECT 1
 	  FROM report_events
-	  WHERE report_events.event_id = e.id
+	  WHERE report_events.event_id = e.id AND report_events.area_id = a.id
 	)
 	ORDER BY e.created_at
 	LIMIT $3
@@ -123,8 +123,8 @@ WITH scanned AS(
 		RETURNING *
   ),
   inserted_events_report AS (
-   INSERT INTO report_events (report_id, event_id)
-	SELECT inserted_reports.id, scanned.event_id
+   INSERT INTO report_events (report_id, area_id, event_id)
+	SELECT inserted_reports.id, inserted_reports.area_id, scanned.event_id
 	FROM
 		scanned
 	JOIN
