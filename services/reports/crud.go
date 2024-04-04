@@ -84,7 +84,7 @@ func GetReportsByArea(b *base.Base, ctx *gin.Context, params *models.GetReportsB
 // ==========================================================
 
 type NotifCreateManyParams struct {
-	params []NotifCreateParams
+	Params []NotifCreateParams `json:"params"`
 }
 
 type NotifCreateParams struct {
@@ -111,19 +111,24 @@ func CreateGlobalReports(b *base.Base) (*[]models.Report, *utils.CError) {
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println("================")
+	fmt.Println("reports", reports)
 	aggUserReports := aggregateReportsByUser(reports)
+	fmt.Println("aggUserReports", aggUserReports)
 
 	var params []NotifCreateParams
-	for _, aggReports := range aggUserReports {
+	for userID, aggReports := range aggUserReports {
 		params = append(params, NotifCreateParams{
-			UserID:   aggReports[0].UserID,
+			UserID:   userID,
 			Subject:  "Test Subject",
 			BodyHTML: fmt.Sprintf("Test Reports %+v", aggReports),
 		})
 	}
+	fmt.Println("params", params)
 
-	errreq := createNotifsOnUserServer(b, params)
+	fmt.Println("================")
+
+	errreq := createNotifsRequest(b, params)
 	if errreq != nil {
 		eventID := sentry.CaptureException(errreq)
 		return nil, &utils.CError{
@@ -136,25 +141,20 @@ func CreateGlobalReports(b *base.Base) (*[]models.Report, *utils.CError) {
 	return &reports, nil
 }
 
-func createNotifsOnUserServer(b *base.Base, params []NotifCreateParams) error {
+func createNotifsRequest(b *base.Base, params []NotifCreateParams) error {
 	return requests.
 		URL(fmt.Sprintf("%s/api/notifs/create/many", b.USER_SERVER_URL)).
 		Method(http.MethodPost).
 		Header(base.HeaderSecretKeyName, b.SECRET_API_KEY).
-		BodyJSON(&NotifCreateManyParams{params: params}).
+		BodyJSON(&NotifCreateManyParams{Params: params}).
 		CheckStatus(http.StatusOK, http.StatusAccepted).
 		Fetch(context.Background())
 }
 
-func aggregateReportsByUser(reports []models.Report) [][]models.Report {
+func aggregateReportsByUser(reports []models.Report) map[string][]models.Report {
 	reportsMap := make(map[string][]models.Report)
 	for _, report := range reports {
 		reportsMap[report.UserID] = append(reportsMap[report.UserID], report)
 	}
-	aggregatedReports := make([][]models.Report, 0, len(reportsMap))
-	for _, userReports := range reportsMap {
-		aggregatedReports = append(aggregatedReports, userReports)
-	}
-
-	return aggregatedReports
+	return reportsMap
 }

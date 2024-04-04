@@ -11,6 +11,22 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func wipeReports() {
+
+	conn := loadDB()
+	defer conn.Close(context.Background())
+
+	content := "DELETE FROM report_events; DELETE FROM reports;"
+
+	response, err := conn.Exec(context.Background(), content)
+	if err != nil {
+		log.Fatal("Error db:", err)
+	}
+	fmt.Println("......")
+	fmt.Println(response)
+	fmt.Println("......")
+}
+
 func pushToDB() {
 
 	conn := loadDB()

@@ -89,8 +89,8 @@ CREATE TABLE reports (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     user_id TEXT NOT NULL,
-    area_id uuid NOT NULL REFERENCES areas(id),
-    CONSTRAINT fk_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
+    area_id uuid NOT NULL,
+    CONSTRAINT fk_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE
 );
 
 
@@ -100,12 +100,12 @@ CREATE TABLE reports (
 CREATE TABLE report_events (
     PRIMARY KEY (report_id, event_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    report_id uuid NOT NULL REFERENCES reports(id),
-    event_id INTEGER NOT NULL REFERENCES events(id),
-    area_id  uuid NOT NULL REFERENCES areas(id),
-    CONSTRAINT fk_report FOREIGN KEY(report_id) REFERENCES reports(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_event FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_area FOREIGN KEY(area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
+    report_id uuid NOT NULL,
+    event_id INTEGER NOT NULL,
+    area_id  uuid NOT NULL,
+    CONSTRAINT fk_report FOREIGN KEY(report_id) REFERENCES reports(id) ON DELETE CASCADE,
+    CONSTRAINT fk_event FOREIGN KEY(event_id) REFERENCES events(id) ON DELETE CASCADE,
+    CONSTRAINT fk_area FOREIGN KEY(area_id) REFERENCES areas(id) ON DELETE CASCADE
 );
 CREATE INDEX report_idx ON report_events("report_id");
 CREATE INDEX event_idx ON report_events("event_id");

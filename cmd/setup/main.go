@@ -17,11 +17,12 @@ type model struct {
 
 func initialModel() model {
 
-	choices := []string{"*DANGER* Reset DB", "Push To DB"}
+	choices := []string{"*DANGER* Reset DB", "Push To DB", "Wipe reports"}
 
 	funcs := map[string]func(){
 		choices[0]: resetDb,
 		choices[1]: pushToDB,
+		choices[2]: wipeReports,
 	}
 
 	return model{
