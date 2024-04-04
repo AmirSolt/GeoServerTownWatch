@@ -55,22 +55,27 @@ func LoadCronJobs(b *base.Base, c *cron.Cron) {
 			})
 		}
 
-		errreq := requests.
-			URL(fmt.Sprintf("%s/api/notifs/create/many", b.USER_SERVER_URL)).
-			Method(http.MethodPost).
-			Header(base.HeaderSecretKeyName, b.SECRET_API_KEY).
-			BodyJSON(&NotifCreateManyParams{params: params}).
-			CheckStatus(http.StatusOK, http.StatusAccepted).
-			Fetch(context.Background())
+		errreq := createNotifsOnUserServer(b, params)
 		if errreq != nil {
 			sentry.CaptureException(errreq)
 			return
 		}
+
 	})
 
 	if err != nil {
 		sentry.CaptureException(err)
 	}
+}
+
+func createNotifsOnUserServer(b *base.Base, params []NotifCreateParams) error {
+	return requests.
+		URL(fmt.Sprintf("%s/api/notifs/create/many", b.USER_SERVER_URL)).
+		Method(http.MethodPost).
+		Header(base.HeaderSecretKeyName, b.SECRET_API_KEY).
+		BodyJSON(&NotifCreateManyParams{params: params}).
+		CheckStatus(http.StatusOK, http.StatusAccepted).
+		Fetch(context.Background())
 }
 
 func aggregateReportsByUser(reports []models.Report) [][]models.Report {

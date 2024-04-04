@@ -133,8 +133,28 @@ func testReportCron(b *base.Base) {
 			return
 		}
 
-		fmt.Println("=======")
-		fmt.Println("reports", reports)
+		aggUserReports := aggregateReportsByUser(reports)
+
+		var params []NotifCreateParams
+		for _, aggReports := range aggUserReports {
+			params = append(params, NotifCreateParams{
+				UserID:   aggReports[0].UserID,
+				Subject:  "Test Subject",
+				BodyHTML: fmt.Sprintf("Test Reports %+v", aggReports),
+			})
+		}
+
+		errreq := createNotifsOnUserServer(b, params)
+		if errreq != nil {
+			eventID := sentry.CaptureException(errreq)
+			cerr := &utils.CError{
+				EventID: eventID,
+				Message: "Internal Server Error",
+				Error:   errreq,
+			}
+			ctx.JSON(http.StatusInternalServerError, cerr)
+			return
+		}
 
 		ctx.JSON(http.StatusOK, reports)
 
