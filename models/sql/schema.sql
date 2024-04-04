@@ -88,7 +88,7 @@ CREATE TRIGGER on_area_insert BEFORE INSERT OR UPDATE ON areas
 CREATE TABLE reports (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    user_id TEXT NOT NULL UNIQUE,
+    user_id TEXT NOT NULL,
     area_id uuid NOT NULL REFERENCES areas(id),
     CONSTRAINT fk_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
