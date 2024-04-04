@@ -3,14 +3,12 @@ package reports
 import (
 	"fmt"
 	"net/http"
-	"time"
 	"townwatch/base"
 	"townwatch/models"
 	"townwatch/utils"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type GetReportsByUserParams struct {
@@ -117,46 +115,10 @@ func LoadRoutes(b *base.Base) {
 
 func testReportCron(b *base.Base) {
 	b.Engine.GET("/api/reports/test", func(ctx *gin.Context) {
-		reports, err := b.DB.Queries.CreateGlobalReports(ctx, models.CreateGlobalReportsParams{
-			FromDate: pgtype.Timestamptz{
-				Time:  time.Now().Add(-time.Duration(24) * time.Hour).UTC(),
-				Valid: true,
-			},
-			ToDate: pgtype.Timestamptz{
-				Time:  time.Now().UTC(),
-				Valid: true,
-			},
-			EventsLimit: int32(b.ScanEventCountLimit),
-		})
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, err)
-			return
-		}
-
-		aggUserReports := aggregateReportsByUser(reports)
-
-		var params []NotifCreateParams
-		for _, aggReports := range aggUserReports {
-			params = append(params, NotifCreateParams{
-				UserID:   aggReports[0].UserID,
-				Subject:  "Test Subject",
-				BodyHTML: fmt.Sprintf("Test Reports %+v", aggReports),
-			})
-		}
-
-		errreq := createNotifsOnUserServer(b, params)
-		if errreq != nil {
-			eventID := sentry.CaptureException(errreq)
-			cerr := &utils.CError{
-				EventID: eventID,
-				Message: "Internal Server Error",
-				Error:   errreq,
-			}
+		cerr := CreateGlobalReports(b)
+		if cerr != nil {
 			ctx.JSON(http.StatusInternalServerError, cerr)
-			return
 		}
-
 		ctx.JSON(http.StatusOK, reports)
-
 	})
 }
