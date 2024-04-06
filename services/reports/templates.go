@@ -38,7 +38,7 @@ func getNotifEmailStr(b *base.Base, reports []models.Report) (string, *utils.CEr
 	}
 
 	buf := new(bytes.Buffer)
-	err = b.Emails.NotifEmail.Execute(buf, notifParams)
+	err := b.Emails.NotifEmail.Execute(buf, notifParams)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
 		cerr := &utils.CError{
