@@ -2,6 +2,7 @@ package reports
 
 import (
 	"bytes"
+	"fmt"
 	"townwatch/base"
 	"townwatch/models"
 	"townwatch/utils"
@@ -35,6 +36,17 @@ func getNotifEmailStr(b *base.Base, reports []models.Report) (string, *utils.CEr
 	notifParams := NotifEmailParams{
 		BaseURL:      b.FRONTEND_URL,
 		ReportParams: reportParams,
+	}
+
+	if b.Emails.NotifEmail == nil {
+		err := fmt.Errorf("b.Emails.NotifEmail is nil")
+		eventID := sentry.CaptureException(err)
+		cerr := &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+		return "", cerr
 	}
 
 	buf := new(bytes.Buffer)

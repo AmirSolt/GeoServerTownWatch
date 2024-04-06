@@ -22,6 +22,7 @@ func LoadBase() *Base {
 	base.loadDB()
 	base.loadEngine()
 	base.loadLogging()
+	base.LoadEmails()
 
 	return &base
 }
