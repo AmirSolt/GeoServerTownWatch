@@ -8,6 +8,7 @@ type Base struct {
 	*Config
 	*DB
 	*gin.Engine
+	*Emails
 }
 
 func LoadBase() *Base {

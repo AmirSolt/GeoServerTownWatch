@@ -118,10 +118,12 @@ func CreateGlobalReports(b *base.Base) (*[]models.Report, *utils.CError) {
 
 	var params []NotifCreateParams
 	for userID, aggReports := range aggUserReports {
+		emailStr, _ := getNotifEmailStr(b, aggReports)
+
 		params = append(params, NotifCreateParams{
 			UserID:   userID,
-			Subject:  "Test Subject",
-			BodyHTML: fmt.Sprintf("Test Reports %+v", aggReports),
+			Subject:  "New Police Reports Detected Near You.",
+			BodyHTML: emailStr,
 		})
 	}
 	fmt.Println("params", params)

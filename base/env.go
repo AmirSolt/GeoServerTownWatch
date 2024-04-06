@@ -12,6 +12,7 @@ import (
 type Env struct {
 	DOMAIN             string `validate:"url"`
 	USER_SERVER_URL    string `validate:"url"`
+	FRONTEND_URL       string `validate:"url"`
 	IS_PROD            bool   `validate:"boolean"`
 	DATABASE_URL       string `validate:"url"`
 	SECRET_API_KEY     string `validate:"required"`
@@ -27,6 +28,7 @@ func (base *Base) loadEnv() {
 	env := Env{
 		DOMAIN:             os.Getenv("DOMAIN"),
 		USER_SERVER_URL:    os.Getenv("USER_SERVER_URL"),
+		FRONTEND_URL:       os.Getenv("FRONTEND_URL"),
 		IS_PROD:            strToBool(os.Getenv("IS_PROD")),
 		DATABASE_URL:       os.Getenv("DATABASE_URL"),
 		SECRET_API_KEY:     os.Getenv("SECRET_API_KEY"),

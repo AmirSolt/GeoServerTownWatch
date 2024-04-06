@@ -1,42 +1,53 @@
 package reports
 
 import (
-	"os"
-	"text/template"
+	"bytes"
+	"townwatch/base"
+	"townwatch/models"
+	"townwatch/utils"
+
+	"github.com/getsentry/sentry-go"
 )
 
-type Pet struct {
-	Name   string
-	Sex    string
-	Intact bool
-	Age    string
-	Breed  string
+type NotifEmailParams struct {
+	BaseURL      string
+	ReportParams []ReportParam
 }
 
-func renderReportEmail() string {
-	dogs := []Pet{
-		{
-			Name:   "Jujube",
-			Sex:    "Female",
-			Intact: false,
-			Age:    "10 months",
-			Breed:  "German Shepherd/Pitbull",
-		},
-		{
-			Name:   "Zephyr",
-			Sex:    "Male",
-			Intact: true,
-			Age:    "13 years, 3 months",
-			Breed:  "German Shepherd/Border Collie",
-		},
+type ReportParam struct {
+	Index   int
+	ID      string
+	BaseURL string
+}
+
+func getNotifEmailStr(b *base.Base, reports []models.Report) (string, *utils.CError) {
+
+	reportParams := []ReportParam{}
+
+	for i, report := range reports {
+		reportParams = append(reportParams, ReportParam{
+			Index:   i + 1,
+			ID:      report.ID,
+			BaseURL: b.FRONTEND_URL,
+		})
 	}
-	var tmplFile = "pets.tmpl"
-	tmpl, err := template.New(tmplFile).ParseFiles(tmplFile)
+
+	notifParams := NotifEmailParams{
+		BaseURL:      b.FRONTEND_URL,
+		ReportParams: reportParams,
+	}
+
+	buf := new(bytes.Buffer)
+	err = b.Emails.NotifEmail.Execute(buf, notifParams)
 	if err != nil {
-		panic(err)
+		eventID := sentry.CaptureException(err)
+		cerr := &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+		return "", cerr
 	}
-	err = tmpl.Execute(os.Stdout, dogs)
-	if err != nil {
-		panic(err)
-	}
+
+	return buf.String(), nil
 }
