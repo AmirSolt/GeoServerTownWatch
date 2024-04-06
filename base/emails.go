@@ -12,7 +12,9 @@ type Emails struct {
 }
 
 func (base *Base) LoadEmails() {
-	base.Emails.NotifEmail = loadNotifEmail()
+	base.Emails = &Emails{
+		NotifEmail: loadNotifEmail(),
+	}
 }
 
 func loadNotifEmail() *template.Template {
