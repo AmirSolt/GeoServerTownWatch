@@ -1,6 +1,7 @@
 package reports
 
 import (
+	"context"
 	"townwatch/base"
 
 	"github.com/getsentry/sentry-go"
@@ -9,7 +10,7 @@ import (
 
 func LoadCronJobs(b *base.Base, c *cron.Cron) {
 	err := c.AddFunc("0 30 * * * ", func() {
-		CreateGlobalReports(b)
+		CreateGlobalReports(b, context.Background())
 	})
 
 	if err != nil {

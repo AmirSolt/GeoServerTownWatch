@@ -8,7 +8,6 @@ type Base struct {
 	*Config
 	*DB
 	*gin.Engine
-	*Emails
 }
 
 func LoadBase() *Base {
@@ -22,7 +21,6 @@ func LoadBase() *Base {
 	base.loadDB()
 	base.loadEngine()
 	base.loadLogging()
-	base.LoadEmails()
 
 	return &base
 }

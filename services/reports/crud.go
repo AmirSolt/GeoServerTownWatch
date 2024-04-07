@@ -93,7 +93,7 @@ type NotifCreateParams struct {
 	BodyHTML string `db:"body_html" json:"body_html"`
 }
 
-func CreateGlobalReports(b *base.Base) (*[]models.Report, *utils.CError) {
+func CreateGlobalReports(b *base.Base, ctx context.Context) (*[]models.Report, *utils.CError) {
 
 	sentry.CaptureMessage(fmt.Sprintf("Reports cron started at: %s", time.Now().Format(time.RFC1123)))
 
@@ -118,7 +118,7 @@ func CreateGlobalReports(b *base.Base) (*[]models.Report, *utils.CError) {
 
 	var params []NotifCreateParams
 	for userID, aggReports := range aggUserReports {
-		emailStr, _ := getNotifEmailStr(b, aggReports)
+		emailStr, _ := getNotifEmailStr(b, ctx, aggReports)
 
 		params = append(params, NotifCreateParams{
 			UserID:   userID,

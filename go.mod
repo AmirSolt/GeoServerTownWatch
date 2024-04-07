@@ -3,6 +3,7 @@ module townwatch
 go 1.21.6
 
 require (
+	github.com/a-h/templ v0.2.648
 	github.com/carlmjohnson/requests v0.23.5
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/getsentry/sentry-go v0.27.0
@@ -10,7 +11,6 @@ require (
 	github.com/go-playground/validator/v10 v10.19.0
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/joho/godotenv v1.5.1
-	github.com/pocketbase/pocketbase v0.22.4
 	github.com/robfig/cron v1.2.0
 )
 
@@ -46,7 +46,6 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
-	github.com/twpayne/go-geom v1.5.4 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.7.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect

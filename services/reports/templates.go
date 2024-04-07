@@ -2,55 +2,21 @@ package reports
 
 import (
 	"bytes"
-	"fmt"
+	"context"
 	"townwatch/base"
 	"townwatch/models"
+	templs "townwatch/templates"
 	"townwatch/utils"
 
 	"github.com/getsentry/sentry-go"
 )
 
-type NotifEmailParams struct {
-	BaseURL      string
-	ReportParams []ReportParam
-}
+func getNotifEmailStr(b *base.Base, ctx context.Context, reports []models.Report) (string, *utils.CError) {
 
-type ReportParam struct {
-	Index   int
-	ID      string
-	BaseURL string
-}
-
-func getNotifEmailStr(b *base.Base, reports []models.Report) (string, *utils.CError) {
-
-	reportParams := []ReportParam{}
-
-	for i, report := range reports {
-		reportParams = append(reportParams, ReportParam{
-			Index:   i + 1,
-			ID:      report.ID,
-			BaseURL: b.FRONTEND_URL,
-		})
-	}
-
-	notifParams := NotifEmailParams{
-		BaseURL:      b.FRONTEND_URL,
-		ReportParams: reportParams,
-	}
-
-	if b.Emails.NotifEmail == nil {
-		err := fmt.Errorf("b.Emails.NotifEmail is nil")
-		eventID := sentry.CaptureException(err)
-		cerr := &utils.CError{
-			EventID: eventID,
-			Message: "Internal Server Error",
-			Error:   err,
-		}
-		return "", cerr
-	}
+	component := templs.NotifEmail(b.FRONTEND_URL, reports)
 
 	buf := new(bytes.Buffer)
-	err := b.Emails.NotifEmail.Execute(buf, notifParams)
+	err := component.Render(ctx, buf)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
 		cerr := &utils.CError{

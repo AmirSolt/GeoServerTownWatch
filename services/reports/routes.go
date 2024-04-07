@@ -115,7 +115,7 @@ func LoadRoutes(b *base.Base) {
 
 func testReportCron(b *base.Base) {
 	b.Engine.GET("/api/reports/test", func(ctx *gin.Context) {
-		reports, cerr := CreateGlobalReports(b)
+		reports, cerr := CreateGlobalReports(b, ctx)
 		if cerr != nil {
 			ctx.JSON(http.StatusInternalServerError, cerr)
 		}
