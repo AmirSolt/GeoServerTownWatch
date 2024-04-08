@@ -63,7 +63,7 @@ WHERE id = $1 AND user_id=$2;
 
 -- name: GetAreasByUser :many
 SELECT * FROM areas
-WHERE user_id = $1 ORDER BY created_at;
+WHERE user_id = $1 ORDER BY created_at DESC;
 
 
 -- name: CreateArea :one
@@ -87,7 +87,7 @@ RETURNING *;
 
 -- name: GetReportsByUser :many
 SELECT * FROM reports
-WHERE user_id = $1 ORDER BY created_at;
+WHERE user_id = $1 ORDER BY created_at DESC;
 
 -- name: GetReportsByArea :many
 SELECT * FROM reports

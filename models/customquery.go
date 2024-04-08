@@ -21,7 +21,7 @@ ST_DWithin(
 )
 AND occur_at >= $4
 AND occur_at <= $5
-ORDER BY occur_at
+ORDER BY occur_at DESC
 LIMIT $6
 `
 
@@ -112,7 +112,7 @@ WITH scanned AS(
 	  FROM report_events
 	  WHERE report_events.event_id = e.id AND report_events.area_id = a.id
 	)
-	ORDER BY e.created_at
+	ORDER BY e.created_at DESC
 	LIMIT $3
   ),
   inserted_reports AS (
