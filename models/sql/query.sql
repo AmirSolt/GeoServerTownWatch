@@ -91,7 +91,7 @@ WHERE user_id = $1 ORDER BY created_at;
 
 -- name: GetReportsByArea :many
 SELECT * FROM reports
-WHERE user_id = $1 AND area_id = $2 ORDER BY created_at;
+WHERE user_id = $1 AND area_id = $2 ORDER BY created_at DESC;
 
 
 -- name: GetReportDetails :one
