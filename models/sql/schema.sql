@@ -1,22 +1,7 @@
 -- Amirali Soltani
 -- 2024-01-29
 CREATE EXTENSION IF NOT EXISTS "postgis";
-
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
-CREATE TYPE crime_type AS ENUM (
-    'Assault',
-    'Auto Theft',
-    'Theft from Motor Vehicle',
-    'Break and Enter',
-    'Sexual Violation',
-    'Robbery',
-    'Theft Over',
-    'Bike Theft',
-    'Shooting',
-    'Homicide'
-);
-
 
 
 
@@ -27,7 +12,7 @@ CREATE TABLE events (
     external_id TEXT NOT NULL UNIQUE,
     neighborhood TEXT,
     location_type TEXT,
-    crime_type crime_type NOT NULL,
+    crime_type TEXT NOT NULL,
     point geography(Point, 4326),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL

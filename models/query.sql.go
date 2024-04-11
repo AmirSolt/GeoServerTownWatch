@@ -132,7 +132,7 @@ type CreateTempEventsParams struct {
 	ExternalID   string             `json:"external_id"`
 	Neighborhood pgtype.Text        `json:"neighborhood"`
 	LocationType pgtype.Text        `json:"location_type"`
-	CrimeType    CrimeType          `json:"crime_type"`
+	CrimeType    string             `json:"crime_type"`
 	Lat          float64            `json:"lat"`
 	Long         float64            `json:"long"`
 }
@@ -206,7 +206,7 @@ func (q *Queries) GetArea(ctx context.Context, arg GetAreaParams) (Area, error) 
 
 const getAreasByUser = `-- name: GetAreasByUser :many
 SELECT id, created_at, user_id, is_active, address, radius, point, lat, long FROM areas
-WHERE user_id = $1 ORDER BY created_at
+WHERE user_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) GetAreasByUser(ctx context.Context, userID string) ([]Area, error) {
@@ -313,7 +313,7 @@ func (q *Queries) GetReportDetails(ctx context.Context, id string) (GetReportDet
 
 const getReportsByArea = `-- name: GetReportsByArea :many
 SELECT id, created_at, user_id, area_id FROM reports
-WHERE user_id = $1 AND area_id = $2 ORDER BY created_at
+WHERE user_id = $1 AND area_id = $2 ORDER BY created_at DESC
 `
 
 type GetReportsByAreaParams struct {
@@ -349,7 +349,7 @@ func (q *Queries) GetReportsByArea(ctx context.Context, arg GetReportsByAreaPara
 const getReportsByUser = `-- name: GetReportsByUser :many
 
 SELECT id, created_at, user_id, area_id FROM reports
-WHERE user_id = $1 ORDER BY created_at
+WHERE user_id = $1 ORDER BY created_at DESC
 `
 
 // =========================================

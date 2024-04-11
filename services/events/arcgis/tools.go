@@ -1,9 +1,15 @@
 package arcgis
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
+	"townwatch/utils"
+
+	"github.com/getsentry/sentry-go"
+	"github.com/go-playground/validator/v10"
 )
 
 func convertToArcgisQueryTime(time time.Time) string {
@@ -14,6 +20,48 @@ func convertToArcgisQueryTime(time time.Time) string {
 		time.Hour(),
 		time.Hour(),
 		time.Second())
+}
+
+// ==============================================================
+
+func fetchArcgis[T any](endpoint string) (*ArcgisResponse[T], *utils.CError) {
+
+	resp, err := http.Get(endpoint)
+	if err != nil {
+		eventID := sentry.CaptureException(err)
+		return nil, &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+	}
+	defer resp.Body.Close()
+
+	var response ArcgisResponse[T]
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		eventID := sentry.CaptureException(err)
+		return nil, &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+	}
+
+	if len(response.Features) == 0 {
+		sentry.CaptureMessage(fmt.Sprintf("Toronto Arcgis Response: Feature Len is 0 | URL: %s", endpoint))
+	}
+
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	vErr := validate.Struct(response)
+	if vErr != nil {
+		eventID := sentry.CaptureException(err)
+		return nil, &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
+		}
+	}
+	return &response, nil
 }
 
 // ==============================================================
@@ -30,7 +78,7 @@ func NewArcgisQuery() *ArcgisQuery {
 }
 
 func (query *ArcgisQuery) DefaultQueries() *ArcgisQuery {
-	query.QInSR("4326")
+	query.QOutSR("4326")
 	query.QOutFields("*")
 	query.QReturnGeometry("true")
 	query.QFormat("pjson")
@@ -40,8 +88,8 @@ func (query *ArcgisQuery) QWhere(value string) *ArcgisQuery {
 	query.QueryMap["where"] = value
 	return query
 }
-func (query *ArcgisQuery) QInSR(value string) *ArcgisQuery {
-	query.QueryMap["inSR"] = value
+func (query *ArcgisQuery) QOutSR(value string) *ArcgisQuery {
+	query.QueryMap["outSR"] = value
 	return query
 }
 
