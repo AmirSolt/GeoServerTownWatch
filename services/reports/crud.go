@@ -111,10 +111,8 @@ func CreateGlobalReports(b *base.Base, ctx context.Context) (*[]models.Report, *
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("================")
-	fmt.Println("reports", reports)
+
 	aggUserReports := aggregateReportsByUser(reports)
-	fmt.Println("aggUserReports", aggUserReports)
 
 	var params []NotifCreateParams
 	for userID, aggReports := range aggUserReports {
@@ -126,9 +124,6 @@ func CreateGlobalReports(b *base.Base, ctx context.Context) (*[]models.Report, *
 			BodyHTML: emailStr,
 		})
 	}
-	fmt.Println("params", params)
-
-	fmt.Println("================")
 
 	errreq := createNotifsRequest(b, params)
 	if errreq != nil {

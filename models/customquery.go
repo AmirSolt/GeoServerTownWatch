@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"fmt"
 	"townwatch/utils"
 
 	"github.com/getsentry/sentry-go"
@@ -155,13 +154,6 @@ func (q *Queries) CreateGlobalReports(ctx context.Context, arg CreateGlobalRepor
 	defer rows.Close()
 	var items []Report
 	for rows.Next() {
-
-		fmt.Println("=====----=-=--=-")
-		columnValues, _ := rows.Values()
-		for i, v := range columnValues {
-			fmt.Printf("Type of value at %v=%T, value=%v | \n", i, v, v)
-		}
-		fmt.Println("=====----=-=--=-")
 
 		var i Report
 		if err := rows.Scan(

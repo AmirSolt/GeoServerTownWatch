@@ -1,7 +1,6 @@
 package events
 
 import (
-	"fmt"
 	"net/http"
 	"reflect"
 	"time"
@@ -62,19 +61,11 @@ func LoadRoutes(b *base.Base) {
 
 		// =========================
 
-		fmt.Println("====================")
-		fmt.Println("dbParams", *dbParams)
-		fmt.Println("====================")
-
 		events, err := b.Queries.ScanPoint(ctx, *dbParams)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, err)
 			return
 		}
-
-		fmt.Println("====================")
-		fmt.Println("events response", len(events))
-		fmt.Println("====================")
 
 		// Create a scan for record
 		go func() {
@@ -94,10 +85,6 @@ func LoadRoutes(b *base.Base) {
 		if censorEvents {
 			cenEvents = CensorEvents(events)
 		}
-
-		fmt.Println("====================")
-		fmt.Println("cenEvents response", len(cenEvents))
-		fmt.Println("====================")
 
 		ctx.JSON(http.StatusOK, cenEvents)
 	})

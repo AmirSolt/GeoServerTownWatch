@@ -37,9 +37,5 @@ func main() {
 		// defer c.Stop()
 	}()
 
-	fmt.Println("=======")
-	fmt.Println(b.DOMAIN)
-	fmt.Println("=======")
-
 	b.Run()
 }

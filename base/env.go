@@ -1,7 +1,6 @@
 package base
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -22,7 +21,7 @@ type Env struct {
 func (base *Base) loadEnv() {
 
 	if err := godotenv.Load(".env"); err != nil {
-		fmt.Println("Warrning .env does not exist:", err)
+
 	}
 	env := Env{
 		DOMAIN:          os.Getenv("DOMAIN"),

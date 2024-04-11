@@ -22,9 +22,11 @@ func wipeReports() {
 	if err != nil {
 		log.Fatal("Error db:", err)
 	}
-	fmt.Println("......")
+
+	fmt.Println("------")
 	fmt.Println(response)
-	fmt.Println("......")
+	fmt.Println("------")
+
 }
 
 func pushToDB() {
@@ -41,9 +43,11 @@ func pushToDB() {
 	if err != nil {
 		log.Fatal("Error db:", err)
 	}
-	fmt.Println("......")
+
+	fmt.Println("------")
 	fmt.Println(response)
-	fmt.Println("......")
+	fmt.Println("------")
+
 }
 
 func resetDb() {
@@ -71,7 +75,10 @@ func resetDb() {
 	if err != nil {
 		log.Fatalf("error dropping database: %v", err)
 	}
-	fmt.Println(">>>", execResponseDrop)
+
+	fmt.Println("------")
+	fmt.Println(execResponseDrop)
+	fmt.Println("------")
 
 	// Create the database
 	// execResponseCreate, err := pool.Exec(ctx, "CREATE DATABASE postgres")
@@ -79,7 +86,11 @@ func resetDb() {
 	if err != nil {
 		log.Fatalf("error creating database: %v", err)
 	}
-	fmt.Println(">>>", execResponseCreate)
+
+	fmt.Println("------")
+	fmt.Println(execResponseCreate)
+	fmt.Println("------")
+
 }
 
 func loadDB() *pgx.Conn {

@@ -27,7 +27,5 @@ func LoadInit(b *base.Base) {
 		err := fmt.Errorf("no police reports found within 7 days")
 		log.Fatal(err)
 	}
-	fmt.Println("==========================")
-	fmt.Println(fmt.Sprintf("Initial police reports added | count: %v", count))
-	fmt.Println("==========================")
+
 }
