@@ -66,8 +66,8 @@ func convertArcgisTorontoResponseToEventParams(arcgisResponse *ArcgisResponse[To
 			Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Neighbourhood158), Valid: true},
 			LocationType: pgtype.Text{String: arcReport.Attributes.LocationCategory, Valid: true},
 			CrimeType:    arcReport.Attributes.CrimeType,
-			Lat:          x,
-			Long:         y,
+			Lat:          y,
+			Long:         x,
 		})
 	}
 

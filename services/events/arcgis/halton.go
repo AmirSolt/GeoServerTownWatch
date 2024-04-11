@@ -55,8 +55,8 @@ func convertArcgisHaltonResponseToEventParams(arcgisResponse *ArcgisResponse[Hal
 			Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Location), Valid: true},
 			LocationType: pgtype.Text{String: "", Valid: true},
 			CrimeType:    arcReport.Attributes.Description,
-			Lat:          x,
-			Long:         y,
+			Lat:          y,
+			Long:         x,
 		})
 	}
 

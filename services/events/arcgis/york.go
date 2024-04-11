@@ -75,8 +75,8 @@ func convertArcgisYorkResponseToEventParams(arcgisResponse *ArcgisResponse[YorkA
 			Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Municipality), Valid: true},
 			LocationType: pgtype.Text{String: arcReport.Attributes.LocationCode, Valid: true},
 			CrimeType:    arcReport.Attributes.OccType,
-			Lat:          x,
-			Long:         y,
+			Lat:          y,
+			Long:         x,
 		})
 	}
 

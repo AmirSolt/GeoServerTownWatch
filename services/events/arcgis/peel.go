@@ -65,8 +65,8 @@ func convertArcgisPeelResponseToEventParams(arcgisResponse *ArcgisResponse[PeelA
 			Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.StreetName), Valid: true},
 			LocationType: pgtype.Text{String: "", Valid: true},
 			CrimeType:    arcReport.Attributes.Description,
-			Lat:          x,
-			Long:         y,
+			Lat:          y,
+			Long:         x,
 		})
 	}
 
