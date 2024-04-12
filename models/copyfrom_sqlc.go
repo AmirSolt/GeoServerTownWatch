@@ -31,9 +31,7 @@ func (r iteratorForCreateTempEvents) Values() ([]interface{}, error) {
 	return []interface{}{
 		r.rows[0].OccurAt,
 		r.rows[0].ExternalID,
-		r.rows[0].Neighborhood,
-		r.rows[0].LocationType,
-		r.rows[0].CrimeType,
+		r.rows[0].Details,
 		r.rows[0].Lat,
 		r.rows[0].Long,
 	}, nil
@@ -44,5 +42,5 @@ func (r iteratorForCreateTempEvents) Err() error {
 }
 
 func (q *Queries) CreateTempEvents(ctx context.Context, arg []CreateTempEventsParams) (int64, error) {
-	return q.db.CopyFrom(ctx, []string{"_temp_events"}, []string{"occur_at", "external_id", "neighborhood", "location_type", "crime_type", "lat", "long"}, &iteratorForCreateTempEvents{rows: arg})
+	return q.db.CopyFrom(ctx, []string{"_temp_events"}, []string{"occur_at", "external_id", "details", "lat", "long"}, &iteratorForCreateTempEvents{rows: arg})
 }

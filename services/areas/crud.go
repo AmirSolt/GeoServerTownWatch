@@ -2,7 +2,6 @@ package areas
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"townwatch/base"
 	"townwatch/models"
@@ -110,30 +109,28 @@ func CensorAreas(areas []models.Area) []models.Area {
 }
 func CensorArea(area models.Area) models.Area {
 	area.Address = censorPostalCode(area.Address)
-	area.Lat = roundCoordinates(area.Lat, 3)
-	area.Long = roundCoordinates(area.Long, 3)
 	area.Point = nil
 	return area
 }
 
 func censorPostalCode(str string) string {
-	if len(str) == 0 {
-		return ""
-	}
+	newStr := ""
 	numUncensored := 3
-	censored := make([]byte, len(str))
-	copy(censored, str[:numUncensored])
-	for i := numUncensored; i < len(str); i++ {
-		censored[i] = '#'
+	for i := 0; i < len(str); i++ {
+		if i < numUncensored {
+			newStr = newStr + string(str[i])
+		} else {
+			newStr = newStr + "*"
+		}
 	}
-	return string(censored)
+	return newStr
 }
 
-func roundCoordinates(num float64, decimals int) float64 {
-	multiplier := math.Pow10(decimals)
-	rounded := math.Round(num * multiplier)
-	return rounded / multiplier
-}
+// func roundCoordinates(num float64, decimals int) float64 {
+// 	multiplier := math.Pow10(decimals)
+// 	rounded := math.Round(num * multiplier)
+// 	return rounded / multiplier
+// }
 
 func removeSpaceAndCapitalize(input string) string {
 	input = strings.ReplaceAll(input, " ", "")

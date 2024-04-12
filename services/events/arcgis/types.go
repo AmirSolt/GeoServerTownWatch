@@ -13,3 +13,5 @@ type ArcgisGeometry struct {
 	X float64 `json:"x" validate:"required"`
 	Y float64 `json:"y" validate:"required"`
 }
+
+type EventDetailsParams map[string]string

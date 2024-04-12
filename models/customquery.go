@@ -9,7 +9,7 @@ import (
 )
 
 const scanPoint = `-- name: scanPoint :many
-SELECT id, created_at, occur_at, external_id, neighborhood, location_type, crime_type, point, lat, long
+SELECT id, created_at, occur_at, external_id, details, point, lat, long
 FROM events
 WHERE 
 ST_DWithin(
@@ -60,9 +60,7 @@ func (q *Queries) ScanPoint(ctx context.Context, arg ScanPointParams) ([]Event, 
 			&i.CreatedAt,
 			&i.OccurAt,
 			&i.ExternalID,
-			&i.Neighborhood,
-			&i.LocationType,
-			&i.CrimeType,
+			&i.Details,
 			&i.Point,
 			&i.Lat,
 			&i.Long,

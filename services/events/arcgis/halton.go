@@ -2,12 +2,14 @@ package arcgis
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 	"townwatch/base"
 	"townwatch/models"
 	"townwatch/utils"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -48,15 +50,27 @@ func convertArcgisHaltonResponseToEventParams(arcgisResponse *ArcgisResponse[Hal
 		x := arcReport.Geometry.X
 		y := arcReport.Geometry.Y
 
+		detailParams := EventDetailsParams{
+			"": "",
+		}
+
+		// Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Location), Valid: true},
+		// LocationType: pgtype.Text{String: "", Valid: true},
+		// CrimeType:    arcReport.Attributes.Description,
+
+		jsonString, err := json.Marshal(detailParams)
+		if err != nil {
+			sentry.CaptureException(err)
+			continue
+		}
+
 		secs := int64(arcReport.Attributes.Date / 1000)
 		reportsParams = append(reportsParams, models.CreateTempEventsParams{
-			OccurAt:      pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
-			ExternalID:   arcReport.Attributes.CaseNo,
-			Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Location), Valid: true},
-			LocationType: pgtype.Text{String: "", Valid: true},
-			CrimeType:    arcReport.Attributes.Description,
-			Lat:          y,
-			Long:         x,
+			ExternalID: arcReport.Attributes.CaseNo,
+			OccurAt:    pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
+			Lat:        y,
+			Long:       x,
+			Details:    []byte(jsonString),
 		})
 	}
 

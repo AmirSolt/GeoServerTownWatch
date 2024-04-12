@@ -12,29 +12,23 @@ CREATE TEMPORARY TABLE _temp_events (LIKE events INCLUDING ALL) ON COMMIT DROP;
 INSERT INTO _temp_events (
     occur_at,
     external_id,
-    neighborhood,
-    location_type,
-    crime_type,
+    details,
     lat,
     long
-) VALUES ($1,$2,$3,$4,$5,$6,$7);
+) VALUES ($1,$2,$3,$4,$5);
 
 -- name: MoveFromTempEventsToEvents :exec
 INSERT INTO events (
     occur_at,
     external_id,
-    neighborhood,
-    location_type,
-    crime_type,
+    details,
     lat,
     long
 )
 SELECT
     occur_at,
     external_id,
-    neighborhood,
-    location_type,
-    crime_type,
+    details,
     lat,
     long
 FROM _temp_events

@@ -128,13 +128,11 @@ func (q *Queries) CreateScan(ctx context.Context, arg CreateScanParams) (Scan, e
 }
 
 type CreateTempEventsParams struct {
-	OccurAt      pgtype.Timestamptz `json:"occur_at"`
-	ExternalID   string             `json:"external_id"`
-	Neighborhood pgtype.Text        `json:"neighborhood"`
-	LocationType pgtype.Text        `json:"location_type"`
-	CrimeType    string             `json:"crime_type"`
-	Lat          float64            `json:"lat"`
-	Long         float64            `json:"long"`
+	OccurAt    pgtype.Timestamptz `json:"occur_at"`
+	ExternalID string             `json:"external_id"`
+	Details    []byte             `json:"details"`
+	Lat        float64            `json:"lat"`
+	Long       float64            `json:"long"`
 }
 
 const createTempEventsTable = `-- name: CreateTempEventsTable :exec
@@ -240,7 +238,7 @@ func (q *Queries) GetAreasByUser(ctx context.Context, userID string) ([]Area, er
 }
 
 const getEventsByReport = `-- name: GetEventsByReport :many
-SELECT e.id, e.created_at, e.occur_at, e.external_id, e.neighborhood, e.location_type, e.crime_type, e.point, e.lat, e.long
+SELECT e.id, e.created_at, e.occur_at, e.external_id, e.details, e.point, e.lat, e.long
 FROM events e
 INNER JOIN report_events re ON e.id = re.event_id
 INNER JOIN reports r ON re.report_id = r.id
@@ -261,9 +259,7 @@ func (q *Queries) GetEventsByReport(ctx context.Context, id string) ([]Event, er
 			&i.CreatedAt,
 			&i.OccurAt,
 			&i.ExternalID,
-			&i.Neighborhood,
-			&i.LocationType,
-			&i.CrimeType,
+			&i.Details,
 			&i.Point,
 			&i.Lat,
 			&i.Long,
@@ -383,18 +379,14 @@ const moveFromTempEventsToEvents = `-- name: MoveFromTempEventsToEvents :exec
 INSERT INTO events (
     occur_at,
     external_id,
-    neighborhood,
-    location_type,
-    crime_type,
+    details,
     lat,
     long
 )
 SELECT
     occur_at,
     external_id,
-    neighborhood,
-    location_type,
-    crime_type,
+    details,
     lat,
     long
 FROM _temp_events

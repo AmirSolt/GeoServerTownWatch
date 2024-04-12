@@ -10,9 +10,7 @@ CREATE TABLE events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     occur_at TIMESTAMPTZ NOT NULL,
     external_id TEXT NOT NULL UNIQUE,
-    neighborhood TEXT,
-    location_type TEXT,
-    crime_type TEXT NOT NULL,
+    details JSONB NOT NULL,
     point geography(Point, 4326),
     lat DOUBLE PRECISION NOT NULL,
     long DOUBLE PRECISION NOT NULL
