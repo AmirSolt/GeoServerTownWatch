@@ -2,12 +2,15 @@ package arcgis
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 	"townwatch/base"
 	"townwatch/models"
 	"townwatch/utils"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -20,26 +23,26 @@ type YorkArcgisAttributes struct {
 	LocationCode     string  `json:"LocationCode"`
 	District         string  `json:"district"`
 	Municipality     string  `json:"municipality"`
-	SpecialGrouping  *string `json:"Special_grouping"`
+	SpecialGrouping  string  `json:"Special_grouping"`
 	XCoordinate      string  `json:"x_coordinate"`
 	YCoordinate      string  `json:"y_coordinate"`
 	WeekDay          int     `json:"week_day"`
 	CrimePerPop      float64 `json:"crime_per_pop"`
 	ObjectID         int     `json:"OBJECTID"`
 	CrimePrevention  string  `json:"crimeprevention"`
-	Shooting         *string `json:"Shooting"`
-	MediaRelease     *string `json:"MediaRelease"`
-	MediaReleaseFlag *string `json:"mediareleaseflag"`
-	DemsPublicURL    *string `json:"dems_public_url"`
-	DemsFlag         *string `json:"dems_flag"`
+	Shooting         string  `json:"Shooting"`
+	MediaRelease     string  `json:"MediaRelease"`
+	MediaReleaseFlag string  `json:"mediareleaseflag"`
+	DemsPublicURL    string  `json:"dems_public_url"`
+	DemsFlag         string  `json:"dems_flag"`
 	OccID            string  `json:"occ_id"`
-	HateCrime        *string `json:"hate_crime"`
+	HateCrime        string  `json:"hate_crime"`
 	CaseStatus       string  `json:"case_status"`
 	OccType          string  `json:"occ_type"`
-	VehicleMake      *string `json:"Vehicle_make"`
-	VehicleModel     *string `json:"Vehicle_model"`
-	VehicleStyle     *string `json:"Vehicle_Style"`
-	VehicleColour    *string `json:"Vehicle_colour"`
+	VehicleMake      string  `json:"Vehicle_make"`
+	VehicleModel     string  `json:"Vehicle_model"`
+	VehicleStyle     string  `json:"Vehicle_Style"`
+	VehicleColour    string  `json:"Vehicle_colour"`
 	ReportDate       int64   `json:"rep_date"`
 }
 
@@ -68,15 +71,31 @@ func convertArcgisYorkResponseToEventParams(arcgisResponse *ArcgisResponse[YorkA
 		x := arcReport.Geometry.X
 		y := arcReport.Geometry.Y
 
+		detailParams := EventDetailsParams{
+			"Unique ID":         arcReport.Attributes.UniqueIdentifier,
+			"Description":       arcReport.Attributes.CaseTypePubtrans,
+			"Occurrence Type":   arcReport.Attributes.OccType,
+			"Location Category": arcReport.Attributes.CaseCategory1,
+			"Premises Type":     arcReport.Attributes.LocationCode,
+			"City":              arcReport.Attributes.Municipality,
+			"Week Day":          strconv.Itoa(arcReport.Attributes.WeekDay),
+			"Status":            arcReport.Attributes.CaseStatus,
+			"Vehicle Make":      arcReport.Attributes.VehicleMake,
+			"Vehicle Model":     arcReport.Attributes.VehicleModel,
+		}
+		jsonString, err := json.Marshal(utils.EventDetailsStringCleaner(detailParams))
+		if err != nil {
+			sentry.CaptureException(err)
+			continue
+		}
+
 		secs := int64(arcReport.Attributes.OccDate / 1000)
 		reportsParams = append(reportsParams, models.CreateTempEventsParams{
-			OccurAt:      pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
-			ExternalID:   arcReport.Attributes.UniqueIdentifier,
-			Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Municipality), Valid: true},
-			LocationType: pgtype.Text{String: arcReport.Attributes.LocationCode, Valid: true},
-			CrimeType:    arcReport.Attributes.OccType,
-			Lat:          y,
-			Long:         x,
+			OccurAt:    pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
+			ExternalID: arcReport.Attributes.UniqueIdentifier,
+			Details:    []byte(jsonString),
+			Lat:        y,
+			Long:       x,
 		})
 	}
 

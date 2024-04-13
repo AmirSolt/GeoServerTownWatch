@@ -2,12 +2,14 @@ package arcgis
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 	"townwatch/base"
 	"townwatch/models"
 	"townwatch/utils"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -54,19 +56,30 @@ func convertArcgisPeelResponseToEventParams(arcgisResponse *ArcgisResponse[PeelA
 		if arcReport.Geometry == nil {
 			continue
 		}
-
 		x := arcReport.Geometry.X
 		y := arcReport.Geometry.Y
 
+		detailParams := EventDetailsParams{
+			"Occurrence Number": arcReport.Attributes.OccurrenceNumber,
+			"Description":       arcReport.Attributes.Description,
+			"Status":            arcReport.Attributes.ClearanceStatus,
+			"Week Day":          arcReport.Attributes.OccurrenceWeekday,
+			"Neighborhood":      fmt.Sprintf("%s %s", arcReport.Attributes.StreetName, arcReport.Attributes.StreetType),
+			"City":              arcReport.Attributes.Municipality,
+		}
+		jsonString, err := json.Marshal(utils.EventDetailsStringCleaner(detailParams))
+		if err != nil {
+			sentry.CaptureException(err)
+			continue
+		}
+
 		secs := int64(arcReport.Attributes.OccDateUTC / 1000)
 		reportsParams = append(reportsParams, models.CreateTempEventsParams{
-			OccurAt:      pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
-			ExternalID:   arcReport.Attributes.OccurrenceNumber,
-			Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.StreetName), Valid: true},
-			LocationType: pgtype.Text{String: "", Valid: true},
-			CrimeType:    arcReport.Attributes.Description,
-			Lat:          y,
-			Long:         x,
+			ExternalID: arcReport.Attributes.OccurrenceNumber,
+			OccurAt:    pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
+			Lat:        y,
+			Long:       x,
+			Details:    []byte(jsonString),
 		})
 	}
 

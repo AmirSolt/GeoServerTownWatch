@@ -38,7 +38,7 @@ func GetReportDetails(b *base.Base, ctx *gin.Context, reportID string) (*models.
 	return &reportDetails, nil
 }
 
-func GetEventsByReport(b *base.Base, ctx *gin.Context, reportID string, censorEvents bool) (*[]models.Event, *utils.CError) {
+func GetEventsByReport(b *base.Base, ctx *gin.Context, reportID string, censorEvents bool) (*[]events.EventResponse, *utils.CError) {
 	eventsO, err := b.DB.Queries.GetEventsByReport(ctx, reportID)
 	if err != nil {
 		eventID := sentry.CaptureException(err)
@@ -48,11 +48,8 @@ func GetEventsByReport(b *base.Base, ctx *gin.Context, reportID string, censorEv
 			Error:   err,
 		}
 	}
-	cenEvents := eventsO
-	if censorEvents {
-		cenEvents = events.CensorEvents(eventsO)
-	}
-	return &cenEvents, nil
+	conEvents := events.ConvertEventsForAPI(eventsO, censorEvents)
+	return &conEvents, nil
 }
 
 func GetReportsByUser(b *base.Base, ctx *gin.Context, userID string) (*[]models.Report, *utils.CError) {

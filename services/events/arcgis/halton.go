@@ -46,19 +46,16 @@ func convertArcgisHaltonResponseToEventParams(arcgisResponse *ArcgisResponse[Hal
 		if arcReport.Geometry == nil {
 			continue
 		}
-
 		x := arcReport.Geometry.X
 		y := arcReport.Geometry.Y
 
 		detailParams := EventDetailsParams{
-			"": "",
+			"Case Number":  arcReport.Attributes.CaseNo,
+			"Description":  arcReport.Attributes.Description,
+			"Neighborhood": arcReport.Attributes.Location,
+			"City":         arcReport.Attributes.City,
 		}
-
-		// Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Location), Valid: true},
-		// LocationType: pgtype.Text{String: "", Valid: true},
-		// CrimeType:    arcReport.Attributes.Description,
-
-		jsonString, err := json.Marshal(detailParams)
+		jsonString, err := json.Marshal(utils.EventDetailsStringCleaner(detailParams))
 		if err != nil {
 			sentry.CaptureException(err)
 			continue
@@ -66,7 +63,7 @@ func convertArcgisHaltonResponseToEventParams(arcgisResponse *ArcgisResponse[Hal
 
 		secs := int64(arcReport.Attributes.Date / 1000)
 		reportsParams = append(reportsParams, models.CreateTempEventsParams{
-			ExternalID: arcReport.Attributes.CaseNo,
+			ExternalID: arcReport.Attributes.GlobalID,
 			OccurAt:    pgtype.Timestamptz{Time: time.Unix(secs, 0).UTC(), Valid: true},
 			Lat:        y,
 			Long:       x,

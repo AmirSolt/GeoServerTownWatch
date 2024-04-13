@@ -1,8 +1,8 @@
 package events
 
 import (
+	"encoding/json"
 	"net/http"
-	"reflect"
 	"time"
 	"townwatch/base"
 	"townwatch/models"
@@ -23,6 +23,17 @@ type ScanPointAPIParams struct {
 	Limit    int32   `json:"limit"`
 	Address  string  `json:"address"`
 	UserID   string  `json:"user_id"`
+}
+
+type EventResponse struct {
+	ID         int32              `json:"id"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	OccurAt    pgtype.Timestamptz `json:"occur_at"`
+	ExternalID string             `json:"external_id"`
+	Details    map[string]string  `json:"details"`
+	Point      *string            `json:"point"`
+	Lat        float64            `json:"lat"`
+	Long       float64            `json:"long"`
 }
 
 func LoadRoutes(b *base.Base) {
@@ -53,7 +64,7 @@ func LoadRoutes(b *base.Base) {
 			params.Limit = int32(b.ScanEventCountLimit)
 		}
 
-		dbParams, errCon := ConvertParams(*params)
+		dbParams, errCon := ConvertScanAPIParamsToDBParams(*params)
 		if errCon != nil {
 			ctx.JSON(http.StatusInternalServerError, errCon)
 			return
@@ -81,12 +92,9 @@ func LoadRoutes(b *base.Base) {
 			})
 		}()
 
-		cenEvents := events
-		if censorEvents {
-			cenEvents = CensorEvents(events)
-		}
+		conEvents := ConvertEventsForAPI(events, censorEvents)
 
-		ctx.JSON(http.StatusOK, cenEvents)
+		ctx.JSON(http.StatusOK, conEvents)
 	})
 
 }
@@ -105,30 +113,53 @@ func CreateScan(b *base.Base, ctx *gin.Context, params *models.CreateScanParams)
 	return &scan, nil
 }
 
-func CensorEvents(events []models.Event) []models.Event {
-	cenEvents := []models.Event{}
+func ConvertEventsForAPI(events []models.Event, censorEvents bool) []EventResponse {
+	conEvents := []EventResponse{}
 	for _, event := range events {
-		cenEvents = append(cenEvents, CensorEvent(event))
+		conDetails, cerr := ConvertEventDetails(event.Details)
+		if cerr != nil {
+			continue
+		}
+		if censorEvents {
+			conDetails = CensorResponseEventDetails(conDetails)
+		}
+
+		conEvents = append(conEvents, EventResponse{
+			ID:         event.ID,
+			CreatedAt:  event.CreatedAt,
+			OccurAt:    event.OccurAt,
+			ExternalID: event.ExternalID,
+			Details:    conDetails,
+			Point:      event.Point,
+			Lat:        event.Lat,
+			Long:       event.Long,
+		})
 	}
-	return cenEvents
+	return conEvents
 }
-func CensorEvent(event models.Event) models.Event {
 
-	uncensoredFields := map[string]bool{"ID": true, "Lat": true, "Long": true}
-
-	eventType := reflect.TypeOf(event)
-	eventValue := reflect.ValueOf(&event).Elem()
-	for i := 0; i < eventType.NumField(); i++ {
-		fieldName := eventType.Field(i).Name
-		if !uncensoredFields[fieldName] {
-			field := eventValue.FieldByName(fieldName)
-			field.Set(reflect.Zero(field.Type()))
+func ConvertEventDetails(eventDetails []byte) (map[string]string, *utils.CError) {
+	var m map[string]string
+	json.Unmarshal(eventDetails[:], &m)
+	if err := json.Unmarshal(eventDetails[:], &m); err != nil {
+		eventID := sentry.CaptureException(err)
+		return nil, &utils.CError{
+			EventID: eventID,
+			Message: "Internal Server Error",
+			Error:   err,
 		}
 	}
-	return event
+	return m, nil
 }
 
-func ConvertParams(apiParams ScanPointAPIParams) (*models.ScanPointParams, *utils.CError) {
+func CensorResponseEventDetails(details map[string]string) map[string]string {
+	for k, _ := range details {
+		details[k] = ""
+	}
+	return details
+}
+
+func ConvertScanAPIParamsToDBParams(apiParams ScanPointAPIParams) (*models.ScanPointParams, *utils.CError) {
 
 	fromDate, cerr := convertStrToTime(apiParams.FromDate)
 	if cerr != nil {

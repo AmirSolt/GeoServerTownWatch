@@ -2,13 +2,14 @@ package arcgis
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 	"townwatch/base"
 	"townwatch/models"
 	"townwatch/utils"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -57,37 +58,30 @@ func convertArcgisTorontoResponseToEventParams(arcgisResponse *ArcgisResponse[To
 		x := arcReport.Geometry.X
 		y := arcReport.Geometry.Y
 
+		detailParams := EventDetailsParams{
+			"Unique ID":         arcReport.Attributes.EventUniqueId,
+			"Premises Type":     arcReport.Attributes.PremisesType,
+			"Location Category": arcReport.Attributes.LocationCategory,
+			"Description":       arcReport.Attributes.CrimeType,
+			"Neighborhood":      arcReport.Attributes.Neighbourhood158,
+		}
+		jsonString, err := json.Marshal(utils.EventDetailsStringCleaner(detailParams))
+		if err != nil {
+			sentry.CaptureException(err)
+			continue
+		}
+
 		secs := int64(arcReport.Attributes.OccDateAgol / 1000)
 		tempTime := time.Unix(secs, 0)
 		tempTime = tempTime.Add(time.Hour * time.Duration(int(arcReport.Attributes.Hour)-tempTime.Hour()))
 		reportsParams = append(reportsParams, models.CreateTempEventsParams{
-			OccurAt:      pgtype.Timestamptz{Time: tempTime.UTC(), Valid: true},
-			ExternalID:   arcReport.Attributes.EventUniqueId,
-			Neighborhood: pgtype.Text{String: removeNeighExtraChars(arcReport.Attributes.Neighbourhood158), Valid: true},
-			LocationType: pgtype.Text{String: arcReport.Attributes.LocationCategory, Valid: true},
-			CrimeType:    arcReport.Attributes.CrimeType,
-			Lat:          y,
-			Long:         x,
+			OccurAt:    pgtype.Timestamptz{Time: tempTime.UTC(), Valid: true},
+			ExternalID: arcReport.Attributes.EventUniqueId,
+			Details:    []byte(jsonString),
+			Lat:        y,
+			Long:       x,
 		})
 	}
 
 	return &reportsParams
-}
-
-func removeNeighExtraChars(inputString string) string {
-	var result strings.Builder
-	flag := false // True when between "(" and ")"
-
-	for _, char := range inputString {
-		if char == '(' {
-			flag = true
-		} else if char == ')' {
-			flag = false
-		} else if !flag {
-			// Write the character to the result if we're not between "(" and ")"
-			result.WriteRune(char)
-		}
-	}
-
-	return result.String()
 }
