@@ -80,9 +80,15 @@ func convertArcgisYorkResponseToEventParams(arcgisResponse *ArcgisResponse[YorkA
 			"City":              arcReport.Attributes.Municipality,
 			"Week Day":          strconv.Itoa(arcReport.Attributes.WeekDay),
 			"Status":            arcReport.Attributes.CaseStatus,
-			"Vehicle Make":      arcReport.Attributes.VehicleMake,
-			"Vehicle Model":     arcReport.Attributes.VehicleModel,
 		}
+
+		if arcReport.Attributes.VehicleMake != "" {
+			detailParams["Vehicle Make"] = arcReport.Attributes.VehicleMake
+		}
+		if arcReport.Attributes.VehicleModel != "" {
+			detailParams["Vehicle Model"] = arcReport.Attributes.VehicleModel
+		}
+
 		jsonString, err := json.Marshal(utils.EventDetailsStringCleaner(detailParams))
 		if err != nil {
 			sentry.CaptureException(err)
