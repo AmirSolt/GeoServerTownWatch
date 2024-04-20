@@ -29,7 +29,7 @@ templ NotifEmail(baseURL string, reports []models.Report) {
 			</div>
 		</div>
 		<table
-			style="width:100%;background-color:#ffffff;"
+			style="margin-left:auto;margin-right:auto;background-color:#ffffff;"
 			align="center"
 			border="0"
 			cellpadding="0"
@@ -80,7 +80,7 @@ templ NotifEmail(baseURL string, reports []models.Report) {
 							Reports:
 						</p>
 						<div></div>
-						<table style="width:100%;" align="center" border="0" cellpadding="0" cellspacing="0" role="presentation">
+						<table style="width:50%;" align="center" border="0" cellpadding="0" cellspacing="0" role="presentation">
 							<tbody>
 								<tr style="display:grid;grid-auto-columns:minmax(0, 1fr);grid-auto-flow:column;">
 									for i, report := range reports {
@@ -92,7 +92,7 @@ templ NotifEmail(baseURL string, reports []models.Report) {
 											<span></span>
 											<span
 												style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif;background-color:#0470dc;border-radius:3px;color:#fff;font-size:18px;text-decoration:none;text-align:center;display:inline-block;width:100%;p-x:0;p-y:19;max-width:100%;line-height:120%;text-transform:none;mso-padding-alt:0px;mso-text-raise:14.25;"
-											>Report #{  strconv.Itoa(i +1) }</span>
+											>Report {  strconv.Itoa(i +1) }</span>
 											<span></span>
 										</a>
 										<p style="font-size:14px;line-height:24px;margin:16px 0;"></p>

@@ -117,7 +117,7 @@ func CreateGlobalReports(b *base.Base, ctx context.Context) (*[]models.Report, *
 
 		params = append(params, NotifCreateParams{
 			UserID:   userID,
-			Subject:  "New Police Reports Detected Near You.",
+			Subject:  "Incident Notification from CivilWatch",
 			BodyHTML: emailStr,
 		})
 	}
