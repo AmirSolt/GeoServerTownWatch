@@ -8,7 +8,7 @@ type Config struct {
 func (b *Base) loadConfig() {
 	config := Config{
 		ScanEventCountLimit: 100,
-		MaxAreasByUser:      10,
+		MaxAreasByUser:      4,
 	}
 
 	b.Config = &config
