@@ -9,7 +9,7 @@ import (
 )
 
 func LoadCronJobs(b *base.Base, c *cron.Cron) {
-	err := c.AddFunc("0 30 * * * ", func() {
+	err := c.AddFunc("0 0 18 * * *", func() {
 		CreateGlobalReports(b, context.Background())
 	})
 
