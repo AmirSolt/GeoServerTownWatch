@@ -3,8 +3,6 @@ module townwatch
 go 1.21.6
 
 require (
-	github.com/a-h/templ v0.2.648
-	github.com/carlmjohnson/requests v0.23.5
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/getsentry/sentry-go v0.27.0
 	github.com/gin-gonic/gin v1.9.1
@@ -26,6 +24,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
@@ -57,5 +56,3 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-

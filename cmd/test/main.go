@@ -1,9 +1,18 @@
 package main
 
-func main() {
-	// urlStr := "https://services.arcgis.com/S9th0jAJ7bqgIRjw/ArcGIS/rest/services/YTD_CRIME_WM/FeatureServer/0/query"
-	// urlStr := "https://services8.arcgis.com/lYI034SQcOoxRCR7/arcgis/rest/services/PublicCrimeDataFME/FeatureServer/0/query"
-	// where := "0=0"
-	// endpoint := arcgis.NewArcgisQuery().DefaultQueries().QWhere(where).BuildWithURL(urlStr)
+import (
+	"townwatch/base"
+	"townwatch/services/events"
+)
 
+func main() {
+
+	b := base.LoadBase()
+	defer b.Kill()
+
+	events.LoadInit(b)
+
+	events.LoadRoutes(b)
+
+	b.Run()
 }

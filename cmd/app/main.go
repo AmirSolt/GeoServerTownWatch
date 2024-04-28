@@ -3,9 +3,7 @@ package main
 import (
 	"fmt"
 	"townwatch/base"
-	"townwatch/services/areas"
 	"townwatch/services/events"
-	"townwatch/services/reports"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/robfig/cron"
@@ -19,8 +17,6 @@ func main() {
 	events.LoadInit(b)
 
 	events.LoadRoutes(b)
-	areas.LoadRoutes(b)
-	reports.LoadRoutes(b)
 
 	go func() {
 		c := cron.New()
@@ -32,7 +28,6 @@ func main() {
 		}()
 
 		events.LoadCronJobs(b, c)
-		reports.LoadCronJobs(b, c)
 		c.Start()
 		// defer c.Stop()
 	}()
